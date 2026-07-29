@@ -9,8 +9,8 @@ signal_catalogue <- list(
     ranges = list(a = c(0.1, 5, 0.1)),
     time = function(t, p) exp(-p["a"] * t),
     transform = function(s, p) 1 / (s + p["a"]),
-    formula = function(p) sprintf("f(t) = e^{-%.2ft}", p["a"]),
-    laplace = function(p) sprintf("F(s) = 1 / (s + %.2f),   Re(s) > -%.2f", p["a"], p["a"])
+    formula = function(p) sprintf("f(t)=e^{-%.2f t}", p["a"]),
+    laplace = function(p) sprintf("F(s)=\\frac{1}{s+%.2f},\\qquad \\operatorname{Re}(s)>-%.2f", p["a"], p["a"])
   ),
   sine = list(
     label = "Sine wave",
@@ -19,8 +19,8 @@ signal_catalogue <- list(
     ranges = list(omega = c(0.2, 8, 0.1)),
     time = function(t, p) sin(p["omega"] * t),
     transform = function(s, p) p["omega"] / (s^2 + p["omega"]^2),
-    formula = function(p) sprintf("f(t) = sin(%.2ft)", p["omega"]),
-    laplace = function(p) sprintf("F(s) = %.2f / (s² + %.2f),   Re(s) > 0",
+    formula = function(p) sprintf("f(t)=\\sin(%.2f t)", p["omega"]),
+    laplace = function(p) sprintf("F(s)=\\frac{%.2f}{s^2+%.2f},\\qquad \\operatorname{Re}(s)>0",
                                   p["omega"], p["omega"]^2)
   ),
   cosine = list(
@@ -30,8 +30,8 @@ signal_catalogue <- list(
     ranges = list(omega = c(0.2, 8, 0.1)),
     time = function(t, p) cos(p["omega"] * t),
     transform = function(s, p) s / (s^2 + p["omega"]^2),
-    formula = function(p) sprintf("f(t) = cos(%.2ft)", p["omega"]),
-    laplace = function(p) sprintf("F(s) = s / (s² + %.2f),   Re(s) > 0", p["omega"]^2)
+    formula = function(p) sprintf("f(t)=\\cos(%.2f t)", p["omega"]),
+    laplace = function(p) sprintf("F(s)=\\frac{s}{s^2+%.2f},\\qquad \\operatorname{Re}(s)>0", p["omega"]^2)
   ),
   polynomial = list(
     label = "Power function",
@@ -40,8 +40,8 @@ signal_catalogue <- list(
     ranges = list(n = c(0, 6, 1)),
     time = function(t, p) t^p["n"],
     transform = function(s, p) factorial(p["n"]) / s^(p["n"] + 1),
-    formula = function(p) sprintf("f(t) = t^%d", p["n"]),
-    laplace = function(p) sprintf("F(s) = %d! / s^%d,   Re(s) > 0",
+    formula = function(p) sprintf("f(t)=t^{%d}", p["n"]),
+    laplace = function(p) sprintf("F(s)=\\frac{%d!}{s^{%d}},\\qquad \\operatorname{Re}(s)>0",
                                   p["n"], p["n"] + 1)
   ),
   damped_sine = list(
@@ -51,8 +51,8 @@ signal_catalogue <- list(
     ranges = list(a = c(0.1, 4, 0.1), omega = c(0.2, 8, 0.1)),
     time = function(t, p) exp(-p["a"] * t) * sin(p["omega"] * t),
     transform = function(s, p) p["omega"] / ((s + p["a"])^2 + p["omega"]^2),
-    formula = function(p) sprintf("f(t) = e^{-%.2ft} sin(%.2ft)", p["a"], p["omega"]),
-    laplace = function(p) sprintf("F(s) = %.2f / ((s + %.2f)² + %.2f)",
+    formula = function(p) sprintf("f(t)=e^{-%.2f t}\\sin(%.2f t)", p["a"], p["omega"]),
+    laplace = function(p) sprintf("F(s)=\\frac{%.2f}{(s+%.2f)^2+%.2f}",
                                   p["omega"], p["a"], p["omega"]^2)
   )
 )
@@ -249,7 +249,8 @@ ui <- fluidPage(
                 column(5,
                   div(class = "card",
                     h3("The learning goal"),
-                    div(class = "formula", "Recognize → Choose → Solve → Verify"),
+                    math_block("\\text{Recognize}\\;\\longrightarrow\\;\\text{Choose}\\;\\longrightarrow\\;\\text{Solve}\\;\\longrightarrow\\;\\text{Verify}",
+                               "Recognize, choose, solve, then verify."),
                     tags$p(class = "hint",
                       "Mastery means you can identify the structure of a new problem, select a justified method, carry out the mathematics, and check the result.")
                   )
@@ -301,7 +302,8 @@ ui <- fluidPage(
                 column(5,
                   div(class = "card",
                     h3("Core idea", help_tip("It is a math translator: it changes a signal that moves through time into a form that is often easier to calculate with.")),
-                    div(class = "formula", "F(s) = L{f(t)} = ∫₀^∞ e^(−st) f(t) dt"),
+                    math_block("F(s)=\\mathcal{L}\\{f(t)\\}=\\int_0^\\infty e^{-st}f(t)\\,dt",
+                               "The Laplace transform definition."),
                     tags$p(class = "hint",
                       "The transform weights a time signal, accumulates it, and represents the result as a function of s."
                     )
@@ -349,7 +351,8 @@ ui <- fluidPage(
                   ),
                   div(class = "card",
                     h3("What to notice"),
-                    div(class = "formula", "L{u(t−a)f(t−a)} = e^(−as) F(s)"),
+                    math_block("\\mathcal{L}\\{u(t-a)f(t-a)\\}=e^{-as}F(s)",
+                               "The second shifting theorem."),
                     tags$p(class = "hint",
                       "A delay in time becomes multiplication by an exponential in the s-domain.")
                   )
@@ -373,8 +376,10 @@ ui <- fluidPage(
                   "A car suspension can be approximated by a mass, spring, and damper. After a sudden road force, ",
                   "engineers want the body to return smoothly to equilibrium without bouncing for too long."
                 ),
-                div(class = "formula", "m x″(t) + c x′(t) + k x(t) = F₀ u(t)"),
-                div(class = "formula", "X(s) = F₀ / [s(ms² + cs + k)]")
+                math_block("m\\ddot{x}(t)+c\\dot{x}(t)+kx(t)=F_0u(t)",
+                           "The suspension motion equation."),
+                math_block("X(s)=\\frac{F_0}{s(ms^2+cs+k)}",
+                           "The transformed suspension displacement.")
               ),
               div(class = "card",
                 h3("Suspension design field guide"),
@@ -401,7 +406,8 @@ ui <- fluidPage(
                       "The damper is the part that turns some of this motion into heat. When c is small, ",
                       "very little energy is removed during each bounce, so the mass and spring keep trading energy back and forth."
                     ),
-                    div(class = "formula", "ζ = c / (2√(km))"),
+                    math_block("\\zeta=\\frac{c}{2\\sqrt{km}}",
+                               "The suspension damping ratio."),
                     tags$p(class = "hint",
                       "Lower c means a lower damping ratio ζ. The poles move closer to the imaginary axis, ",
                       "oscillations fade more slowly, overshoot grows, and the frequency-response peak near the ",
@@ -516,8 +522,10 @@ ui <- fluidPage(
                       "flows out. Engineers use the Laplace transform to predict how quickly the outlet concentration ",
                       "responds when the incoming concentration changes."
                     ),
-                    div(class = "formula", "V dC/dt = q(Cᵢₙ − C)"),
-                    div(class = "formula", "ΔC(s) / ΔCᵢₙ(s) = 1 / (τs + 1),   τ = V/q")
+                    math_block("V\\frac{dC}{dt}=q(C_{\\mathrm{in}}-C)",
+                               "The well-mixed tank material balance."),
+                    math_block("\\frac{\\Delta C(s)}{\\Delta C_{\\mathrm{in}}(s)}=\\frac{1}{\\tau s+1},\\qquad \\tau=\\frac{V}{q}",
+                               "The tank transfer function and residence time.")
                   ),
                   div(class = "card",
                     h3("Mixing-process design guide"),
@@ -539,7 +547,7 @@ ui <- fluidPage(
                       ),
                       column(6,
                         tags$h4("The key design relationship"),
-                        div(class = "formula", "τ = V/q"),
+                        math_block("\\tau=\\frac{V}{q}", "Residence time equals volume divided by flow rate."),
                         tags$p(
                           "The time constant is tank volume divided by flow. Increasing volume gives the process ",
                           "more memory; increasing flow replaces the contents faster."
@@ -639,8 +647,10 @@ ui <- fluidPage(
                       "structural damping. Engineers study its response to wind so occupants remain comfortable ",
                       "and motion stays within safe limits."
                     ),
-                    div(class = "formula", "M x″(t) + C x′(t) + K x(t) = Fw u(t)"),
-                    div(class = "formula", "X(s) = Fw / [s(Ms² + Cs + K)]")
+                    math_block("M\\ddot{x}(t)+C\\dot{x}(t)+Kx(t)=F_wu(t)",
+                               "The building motion equation."),
+                    math_block("X(s)=\\frac{F_w}{s(Ms^2+Cs+K)}",
+                               "The transformed building displacement.")
                   ),
                   div(class = "card",
                     h3("Wind-response design guide"),
@@ -666,7 +676,8 @@ ui <- fluidPage(
                           "Engineers can increase lateral stiffness, reshape the tower to disrupt vortices, add ",
                           "viscous dampers, or install a tuned mass damper that moves against the building sway."
                         ),
-                        div(class = "formula", "fₙ = (1 / 2π)√(K/M)"),
+                        math_block("f_n=\\frac{1}{2\\pi}\\sqrt{\\frac{K}{M}}",
+                                   "The natural frequency in hertz."),
                         tags$p(class = "hint",
                           "More stiffness raises the natural frequency. More mass lowers it. More damping reduces ",
                           "the resonance peak and helps motion fade sooner.")
@@ -807,7 +818,7 @@ ui <- fluidPage(
                     div(class = "eyebrow", "Interactive method"),
                     h2("Characteristic-root explorer"),
                     tags$p("Explore the homogeneous equation y″ + ay′ + by = 0 and see how its roots control the motion."),
-                    div(class = "formula", "r² + ar + b = 0")
+                    math_block("r^2+ar+b=0", "The characteristic equation.")
                   ),
                   div(class = "card",
                     h3("Linear ODE design guide"),
@@ -841,7 +852,7 @@ ui <- fluidPage(
                     div(class = "eyebrow", "Coupled equations"),
                     h2("Two-state system explorer"),
                     tags$p("Study x′ = ax + by and y′ = cx + dy. Eigenvalues reveal whether trajectories decay, grow, spiral, or form a saddle."),
-                    div(class = "formula", "u′ = Au")
+                    math_block("\\mathbf{u}'=A\\mathbf{u}", "A coupled linear differential equation system.")
                   ),
                   div(class = "card",
                     h3("System solution guide"),
@@ -908,7 +919,8 @@ ui <- fluidPage(
                           "The rate of temperature change is proportional to the gap between the current temperature ",
                           "and its final equilibrium. The exponential term describes how the system gradually forgets its initial condition."
                         ),
-                        div(class = "formula", "1τ ≈ 63% · 3τ ≈ 95% · 5τ ≈ 99%"),
+                        math_block("1\\tau\\approx63\\%,\\qquad 3\\tau\\approx95\\%,\\qquad 5\\tau\\approx99\\%",
+                                   "One, three, and five time constants reach about 63, 95, and 99 percent."),
                         tags$p(class = "hint",
                           "Reducing thermal resistance lowers the final temperature. Reducing thermal capacitance makes the response faster.")
                       )
@@ -1013,7 +1025,8 @@ ui <- fluidPage(
                   div(class = "card",
                     div(class = "eyebrow", "Interactive calculation"),
                     h2("Solve Ax=b and test invertibility"),
-                    div(class = "formula", "[a  b; c  d][x; y] = [p; q]")
+                    math_block("\\begin{bmatrix}a&b\\\\c&d\\end{bmatrix}\\begin{bmatrix}x\\\\y\\end{bmatrix}=\\begin{bmatrix}p\\\\q\\end{bmatrix}",
+                               "A two by two linear system in matrix form.")
                   ),
                   div(class = "card",
                     h3("System solution guide"),
@@ -1049,7 +1062,7 @@ ui <- fluidPage(
                     div(class = "eyebrow", "Geometric intuition"),
                     h2("Eigenvectors and diagonalization"),
                     tags$p("For a symmetric 2×2 matrix, change the entries and watch the eigenvectors remain perpendicular."),
-                    div(class = "formula", "Av = λv")
+                    math_block("A\\mathbf{v}=\\lambda\\mathbf{v}", "The eigenvalue equation.")
                   ),
                   div(class = "card",
                     h3("Eigenvalue solution guide"),
@@ -1302,7 +1315,9 @@ ui <- fluidPage(
                       )
                     ),
                     tags$p(class = "hint",
-                      "For a forced equation, y=yₕ+yₚ. Multiply the usual trial for yₚ by x when it duplicates a homogeneous mode.")
+                      "For a forced equation, ", math_inline("y=y_h+y_p", "y equals homogeneous plus particular solution"),
+                      ". Multiply the usual trial for ", math_inline("y_p", "the particular solution"),
+                      " by ", math_inline("x", "x"), " when it duplicates a homogeneous mode.")
                   ),
                   div(class = "card",
                     h3("Cauchy-Euler and order reduction"),
@@ -1331,7 +1346,11 @@ ui <- fluidPage(
                     math_block("A^{-1}=\\frac{1}{\\det(A)}\\begin{bmatrix}d&-b\\\\-c&a\\end{bmatrix},\\qquad \\det(A)\\ne0",
                                "The inverse of a two by two matrix is one over its determinant times d negative b, negative c a."),
                     tags$p(class = "hint",
-                      "For Ax=b: det(A)≠0 means one solution. If det(A)=0, compare rank(A) with rank([A|b]).")
+                      "For ", math_inline("A\\mathbf{x}=\\mathbf{b}", "A x equals b"), ": ",
+                      math_inline("\\det(A)\\ne0", "determinant A is nonzero"), " means one solution. If ",
+                      math_inline("\\det(A)=0", "determinant A equals zero"), ", compare ",
+                      math_inline("\\operatorname{rank}(A)", "rank of A"), " with ",
+                      math_inline("\\operatorname{rank}([A\\mid\\mathbf{b}])", "rank of the augmented matrix"), ".")
                   ),
                   div(class = "card",
                     h3("Determinant identities"),
@@ -1358,10 +1377,10 @@ ui <- fluidPage(
                     tags$table(
                       tags$thead(tags$tr(tags$th("Connection"), tags$th("Result"))),
                       tags$tbody(
-                        tags$tr(tags$td("det(A)"), tags$td("Product of eigenvalues")),
-                        tags$tr(tags$td("trace(A)"), tags$td("Sum of eigenvalues")),
-                        tags$tr(tags$td("A⁻¹"), tags$td("Eigenvalues become 1/λ")),
-                        tags$tr(tags$td("Aᵏ"), tags$td("Eigenvalues become λᵏ")),
+                        tags$tr(tags$td(math_inline("\\det(A)", "determinant of A")), tags$td("Product of eigenvalues")),
+                        tags$tr(tags$td(math_inline("\\operatorname{tr}(A)", "trace of A")), tags$td("Sum of eigenvalues")),
+                        tags$tr(tags$td(math_inline("A^{-1}", "A inverse")), tags$td("Eigenvalues become ", math_inline("\\lambda^{-1}", "one over lambda"))),
+                        tags$tr(tags$td(math_inline("A^k", "A to the k")), tags$td("Eigenvalues become ", math_inline("\\lambda^k", "lambda to the k"))),
                         tags$tr(tags$td("Singular A"), tags$td("At least one eigenvalue is 0"))
                       )
                     )
@@ -1375,8 +1394,8 @@ ui <- fluidPage(
                       tags$tbody(
                         tags$tr(tags$td("Delay, unit step, impulse, or integral equation"), tags$td("Laplace transform")),
                         tags$tr(tags$td("Constant-coefficient homogeneous ODE"), tags$td("Characteristic polynomial")),
-                        tags$tr(tags$td("Coefficients follow x², x, constant"), tags$td("Cauchy-Euler trial y=xᵐ")),
-                        tags$tr(tags$td("Nonlinear second-order ODE missing x or y"), tags$td("Reduce order with u=y′")),
+                        tags$tr(tags$td("Coefficients follow ", math_inline("x^2,x,1", "x squared, x, constant")), tags$td("Cauchy-Euler trial ", math_inline("y=x^m", "y equals x to the m"))),
+                        tags$tr(tags$td("Nonlinear second-order ODE missing x or y"), tags$td("Reduce order with ", math_inline("u=y'", "u equals y prime"))),
                         tags$tr(tags$td("Parameterized system: none, one, or infinite"), tags$td("Row reduction and rank")),
                         tags$tr(tags$td("Matrix powers or roots"), tags$td("Diagonalization")),
                         tags$tr(tags$td("Invertibility or singularity"), tags$td("Determinant, pivots, or zero eigenvalue"))
@@ -1416,8 +1435,10 @@ server <- function(input, output, session) {
 
   output$formula_card <- renderUI({
     p <- params()
-    tagList(div(class = "formula", current()$formula(p)),
-            div(class = "formula", current()$laplace(p)))
+    tagList(
+      math_block(current()$formula(p), "Selected time-domain function."),
+      math_block(current()$laplace(p), "Its Laplace transform and convergence condition.")
+    )
   })
 
   dark_plot <- function(xlab, ylab) {
@@ -2084,6 +2105,66 @@ server <- function(input, output, session) {
     )
   )
 
+  # Textbook-style versions of every generated practice prompt and final result.
+  # The explanatory steps stay conversational, while the mathematics is rendered
+  # consistently by MathJax rather than by improvised Unicode superscripts.
+  practice_math <- list(
+    "Laplace transforms" = list(
+      Foundation = list(
+        c("\\text{Find }\\mathcal{L}\\{t^2e^{-3t}\\}.",
+          "\\mathcal{L}\\{t^2e^{-3t}\\}=\\frac{2}{(s+3)^3}"),
+        c("\\text{Find }\\mathcal{L}^{-1}\\!\\left\\{\\frac{s+2}{(s+2)^2+9}\\right\\}.",
+          "f(t)=e^{-2t}\\cos(3t)")
+      ),
+      `Exam-style` = list(
+        c("\\text{Find }\\mathcal{L}^{-1}\\!\\left\\{e^{-2s}\\frac{s}{s^2+4}\\right\\}.",
+          "f(t)=\\cos\\!\\bigl(2(t-2)\\bigr)u(t-2)"),
+        c("\\text{Solve }y'+3y=\\delta(t-2),\\qquad y(0)=0.",
+          "y(t)=e^{-3(t-2)}u(t-2)")
+      ),
+      Challenge = list(
+        c("y(t)+4\\int_0^t(t-\\tau)y(\\tau)\\,d\\tau=2t",
+          "y(t)=\\sin(2t)"),
+        c("\\text{Find }\\mathcal{L}\\!\\left\\{t\\int_0^t e^{-\\tau}\\sin(2\\tau)\\,d\\tau\\right\\}.",
+          "\\mathcal{L}\\{tg(t)\\}=\\frac{2(3s^2+4s+5)}{s^2(s^2+2s+5)^2}")
+      )
+    ),
+    "Differential equations" = list(
+      Foundation = list(
+        c("y''+5y'+6y=0", "y=C_1e^{-2x}+C_2e^{-3x}"),
+        c("\\text{Build an ODE for }y=C_1+C_2e^{-2x}.", "y''+2y'=0")
+      ),
+      `Exam-style` = list(
+        c("x^2y''+3xy'-3y=0", "y=C_1x+C_2x^{-3}"),
+        c("y''=2yy',\\qquad y(0)=0,\\quad y'(0)=1", "y(x)=\\tan x")
+      ),
+      Challenge = list(
+        c("x'=-x+y,\\qquad y'=2x", "\\text{The origin is an unstable saddle point.}"),
+        c("y''-2y'+y=e^x", "y=e^x\\left(C_1+C_2x+\\frac{x^2}{2}\\right)")
+      )
+    ),
+    "Linear algebra" = list(
+      Foundation = list(
+        c("A=\\begin{bmatrix}3&2\\\\5&3\\end{bmatrix},\\qquad \\text{find }\\det(A).",
+          "\\det(A)=-1\\ne0\\quad\\Longrightarrow\\quad A\\text{ is invertible}"),
+        c("\\lambda(A)=\\{1,2,4\\},\\qquad \\text{find }\\det(A)\\text{ and }\\lambda(A^{-1}).",
+          "\\det(A)=8,\\qquad \\lambda(A^{-1})=\\left\\{1,\\frac12,\\frac14\\right\\}")
+      ),
+      `Exam-style` = list(
+        c("A=\\begin{bmatrix}1&k\\\\k&1\\end{bmatrix}",
+          "\\lambda_1=1+k,\\quad\\lambda_2=1-k;\\qquad A\\text{ is singular when }k=\\pm1"),
+        c("kx+y=1,\\qquad 2x+2y=2",
+          "\\begin{cases}k\\ne1:&\\text{one solution},\\\\k=1:&\\text{infinitely many solutions.}\\end{cases}")
+      ),
+      Challenge = list(
+        c("A=\\begin{bmatrix}5&4\\\\4&5\\end{bmatrix},\\qquad \\text{find }A^{1/2}.",
+          "A^{1/2}=\\begin{bmatrix}2&1\\\\1&2\\end{bmatrix}"),
+        c("\\text{Simplify }\\det\\!\\left(A^3B^{-1}A^TB^2\\right).",
+          "\\det\\!\\left(A^3B^{-1}A^TB^2\\right)=\\det(A)^4\\det(B)")
+      )
+    )
+  )
+
   selected_practice <- reactive({
     topic <- input$practice_topic
     level <- input$practice_level
@@ -2093,19 +2174,25 @@ server <- function(input, output, session) {
   })
 
   output$practice_prompt <- renderUI({
-    item <- selected_practice()
-    div(class = "formula", item[1])
+    topic <- input$practice_topic
+    level <- input$practice_level
+    bank <- practice_math[[topic]][[level]]
+    index <- (input$new_practice %% length(bank)) + 1
+    math_block(bank[[index]][1], "Practice problem.")
   })
 
   output$practice_solution <- renderUI({
     item <- selected_practice()
     steps <- strsplit(item[2], "|", fixed = TRUE)[[1]]
+    topic <- input$practice_topic
+    level <- input$practice_level
+    math_bank <- practice_math[[topic]][[level]]
+    index <- (input$new_practice %% length(math_bank)) + 1
     tagList(
       div(class = "eyebrow", "Solve this problem step by step"),
       tags$ol(class = "learning-path", lapply(steps, tags$li)),
-      div(class = "formula",
-          tags$strong("Final answer: "),
-          span(item[3]))
+      tags$h4("Final answer"),
+      math_block(math_bank[[index]][2], "Final answer.")
     )
   })
 }
