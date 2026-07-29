@@ -111,6 +111,87 @@ math_inline <- function(tex, label) {
   )
 }
 
+video_lesson_page <- function(topic, intro, videos, catalogue_url) {
+  div(
+    div(class = "card",
+      div(class = "eyebrow", "Watch · pause · practise"),
+      h2(paste(topic, "video lessons")),
+      tags$p(intro),
+      tags$p(class = "hint",
+        "Suggested routine: watch one example, pause before each worked step, solve it yourself, then reproduce the method in this app."),
+      tags$a(class = "source-link", href = catalogue_url, target = "_blank",
+             rel = "noopener noreferrer", "View the source lesson catalogue on Video-Tutor.net")
+    ),
+    div(class = "video-grid",
+      lapply(videos, function(video) {
+        div(class = "card video-card",
+          div(class = "video-number", video$lesson),
+          h3(video$title),
+          tags$p(video$purpose),
+          tags$a(
+            class = "btn video-link", href = video$url, target = "_blank",
+            rel = "noopener noreferrer", "Watch video ↗"
+          )
+        )
+      })
+    )
+  )
+}
+
+laplace_videos <- list(
+  list(lesson = "01", title = "Laplace transform fundamentals",
+       purpose = "Start with the definition, transform notation, and the idea of moving from time to the s-domain.",
+       url = "https://www.youtube.com/@TheOrganicChemistryTutor/search?query=laplace%20transform"),
+  list(lesson = "02", title = "Inverse Laplace transforms",
+       purpose = "Practise reading transform tables, rearranging rational functions, and returning to a time-domain signal.",
+       url = "https://www.youtube.com/@TheOrganicChemistryTutor/search?query=inverse%20laplace%20transform"),
+  list(lesson = "03", title = "Solving differential equations with Laplace transforms",
+       purpose = "Connect derivative rules and initial conditions to the algebraic equation for Y(s).",
+       url = "https://www.youtube.com/@TheOrganicChemistryTutor/search?query=solving%20differential%20equations%20laplace"),
+  list(lesson = "04", title = "Unit-step and shifted functions",
+       purpose = "Reinforce the second-shifting theorem used in the Property Lab.",
+       url = "https://www.youtube.com/@TheOrganicChemistryTutor/search?query=unit%20step%20function%20laplace"),
+  list(lesson = "05", title = "Convolution and impulse inputs",
+       purpose = "Review the two tools that often appear in integral equations and sudden-input initial-value problems.",
+       url = "https://www.youtube.com/@TheOrganicChemistryTutor/search?query=laplace%20convolution%20impulse")
+)
+
+differential_videos <- list(
+  list(lesson = "9.1", title = "The Initial Value Problem",
+       purpose = "Learn how an equation and its starting values combine to determine one specific solution.",
+       url = "https://www.youtube.com/watch?v=kwGukY_2qWQ"),
+  list(lesson = "9.2", title = "Separable First-Order Differential Equations",
+       purpose = "Build the separate–integrate–solve habit for the most recognizable first-order family.",
+       url = "https://www.youtube.com/watch?v=C7nuJcJriWM"),
+  list(lesson = "9.9", title = "Homogeneous Differential Equations",
+       purpose = "Practise the y=vx substitution for first-order homogeneous equations.",
+       url = "https://www.youtube.com/watch?v=ZEJVyybsiT4"),
+  list(lesson = "9.10", title = "First-Order Linear Differential Equations",
+       purpose = "Review standard form and the integrating-factor method.",
+       url = "https://www.youtube.com/watch?v=gd1FYn86P0c"),
+  list(lesson = "9.11", title = "Bernoulli's Differential Equation",
+       purpose = "See how a nonlinear-looking equation can be converted into a first-order linear equation.",
+       url = "https://www.youtube.com/watch?v=BoI_ej-T0V4")
+)
+
+linear_algebra_videos <- list(
+  list(lesson = "15.7", title = "Elementary Row Operations",
+       purpose = "Review the legal row moves that preserve the solution set of a linear system.",
+       url = "https://www.youtube.com/watch?v=9PNCjHemIhI"),
+  list(lesson = "15.8", title = "Gaussian Elimination and Row-Echelon Form",
+       purpose = "Practise finding pivots, solving systems, and recognizing free variables.",
+       url = "https://www.youtube.com/watch?v=eDb6iugi6Uk"),
+  list(lesson = "15.11", title = "Inverse of a 2×2 Matrix",
+       purpose = "Connect the inverse formula to the determinant and the solution of Ax=b.",
+       url = "https://www.youtube.com/watch?v=aiBgjz5xbyg"),
+  list(lesson = "15.13", title = "Determinants of 2×2 and 3×3 Matrices",
+       purpose = "Build speed with determinant calculations before using determinant identities and eigenvalue tests.",
+       url = "https://www.youtube.com/watch?v=3ROzG6n4yMc"),
+  list(lesson = "15.14", title = "Determinant of a 3×3 Matrix",
+       purpose = "Work through cofactor expansion and sign patterns on a larger matrix.",
+       url = "https://www.youtube.com/watch?v=eYjSu_xXUUQ")
+)
+
 ui <- fluidPage(
   tags$head(
     tags$meta(name = "viewport", content = "width=device-width, initial-scale=1"),
@@ -161,6 +242,15 @@ ui <- fluidPage(
       .concept { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
       .concept .card { margin:0; }
       .concept strong { color:var(--cyan); display:block; margin-bottom:7px; }
+      .video-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+      .video-grid .card { margin:0; }
+      .video-card { display:flex; flex-direction:column; min-height:220px; }
+      .video-card p { color:#cbd5e1; line-height:1.6; flex:1; }
+      .video-number { color:var(--violet); font-weight:800; letter-spacing:.12em;
+        font-size:12px; margin-bottom:10px; }
+      .video-link { align-self:flex-start; color:#061019!important; background:var(--cyan)!important;
+        border:0!important; border-radius:9px!important; font-weight:750; padding:9px 13px!important; }
+      .video-link:hover,.video-link:focus { background:#7dd3fc!important; color:#061019!important; }
       .learning-path { margin:0; padding-left:22px; color:#dbeafe; }
       .learning-path li { padding:6px 0 6px 5px; }
       .learning-path li::marker { color:var(--violet); font-weight:700; }
@@ -192,7 +282,7 @@ ui <- fluidPage(
       th { color:var(--muted); font-weight:600; text-align:left; }
       th,td { padding:12px 10px; border-bottom:1px solid var(--border); }
       code { background:#0a0f18; color:#c4b5fd; padding:3px 6px; }
-      @media(max-width:800px){ .concept{grid-template-columns:1fr;} .hero{padding:26px 20px;}
+      @media(max-width:800px){ .concept,.video-grid{grid-template-columns:1fr;} .hero{padding:26px 20px;}
         .content{padding:16px;} .metric-row{grid-template-columns:1fr;} }
     "))
   ),
@@ -364,6 +454,18 @@ ui <- fluidPage(
                       h3("Transform magnitude", help_tip("Magnitude means how strong or large the transformed signal is at each value of s.")),
                       plotOutput("shift_laplace_plot", height = 300))
                 )
+              )
+            ),
+            tabPanel("Video Lessons", value = "laplace_videos",
+              video_lesson_page(
+                "Laplace transform",
+                paste(
+                  "Use these Organic Chemistry Tutor searches as a guided watch list.",
+                  "Video-Tutor.net does not currently expose a dedicated Laplace chapter,",
+                  "so these links open the matching lessons on the creator's YouTube channel."
+                ),
+                laplace_videos,
+                "https://www.video-tutor.net/video-playlists.html"
               )
             ),
             tabPanel("Engineering Example", value = "engineering",
@@ -882,6 +984,14 @@ ui <- fluidPage(
                     )
                   )
                 ),
+                tabPanel("Video Lessons",
+                  video_lesson_page(
+                    "Differential equations",
+                    "These lessons come from the Differential Equations chapter of the Organic Chemistry Tutor's Video-Tutor.net calculus catalogue.",
+                    differential_videos,
+                    "https://www.video-tutor.net/differential-equations.html"
+                  )
+                ),
                 tabPanel("Engineering Example",
                   div(class = "card",
                     div(class = "eyebrow", "Thermal engineering"),
@@ -1088,6 +1198,14 @@ ui <- fluidPage(
                       div(class = "card plot-wrap", h3("Eigenvector directions"),
                           plotOutput("eigen_plot", height = 420))
                     )
+                  )
+                ),
+                tabPanel("Video Lessons",
+                  video_lesson_page(
+                    "Linear algebra",
+                    "These matrix lessons come from the Organic Chemistry Tutor's Video-Tutor.net algebra catalogue and reinforce the system-solving tools used throughout this section.",
+                    linear_algebra_videos,
+                    "https://www.video-tutor.net/matrices.html"
                   )
                 ),
                 tabPanel("Engineering Example",
