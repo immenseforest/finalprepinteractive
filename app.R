@@ -126,6 +126,7 @@ video_lesson_page <- function(topic, intro, videos, catalogue_url) {
       lapply(videos, function(video) {
         div(class = "card video-card",
           div(class = "video-number", video$lesson),
+          div(class = "video-source", video$creator),
           h3(video$title),
           tags$p(video$purpose),
           tags$a(
@@ -139,57 +140,80 @@ video_lesson_page <- function(topic, intro, videos, catalogue_url) {
 }
 
 laplace_videos <- list(
-  list(lesson = "01", title = "Laplace transform fundamentals",
-       purpose = "Start with the definition, transform notation, and the idea of moving from time to the s-domain.",
-       url = "https://www.youtube.com/@TheOrganicChemistryTutor/search?query=laplace%20transform"),
-  list(lesson = "02", title = "Inverse Laplace transforms",
-       purpose = "Practise reading transform tables, rearranging rational functions, and returning to a time-domain signal.",
-       url = "https://www.youtube.com/@TheOrganicChemistryTutor/search?query=inverse%20laplace%20transform"),
-  list(lesson = "03", title = "Solving differential equations with Laplace transforms",
+  list(lesson = "01", creator = "3Blue1Brown",
+       title = "Why Laplace transforms are so useful",
+       purpose = "Build intuition for why a time-domain differential equation becomes easier algebra in the s-domain.",
+       url = "https://www.youtube.com/watch?v=FE-hM1kRK4Y"),
+  list(lesson = "02", creator = "Dr. Trefor Bazett",
+       title = "Inverse Laplace transform using partial fractions",
+       purpose = "Practise decomposing a rational transform and returning to the time-domain signal.",
+       url = "https://www.youtube.com/watch?v=c6YnYr8KsSo"),
+  list(lesson = "03", creator = "Dr. Trefor Bazett",
+       title = "Solve a differential equation with Laplace transforms",
        purpose = "Connect derivative rules and initial conditions to the algebraic equation for Y(s).",
-       url = "https://www.youtube.com/@TheOrganicChemistryTutor/search?query=solving%20differential%20equations%20laplace"),
-  list(lesson = "04", title = "Unit-step and shifted functions",
-       purpose = "Reinforce the second-shifting theorem used in the Property Lab.",
-       url = "https://www.youtube.com/@TheOrganicChemistryTutor/search?query=unit%20step%20function%20laplace"),
-  list(lesson = "05", title = "Convolution and impulse inputs",
-       purpose = "Review the two tools that often appear in integral equations and sudden-input initial-value problems.",
-       url = "https://www.youtube.com/@TheOrganicChemistryTutor/search?query=laplace%20convolution%20impulse")
+       url = "https://www.youtube.com/watch?v=fuxFrpaMLtw"),
+  list(lesson = "04", creator = "Dr. Trefor Bazett",
+       title = "Laplace transform of a piecewise unit-step function",
+       purpose = "Apply the unit-step function and second-shifting theorem used in the Property Lab.",
+       url = "https://www.youtube.com/watch?v=yHzXAoFjU3k"),
+  list(lesson = "05", creator = "Dr. Trefor Bazett",
+       title = "Solving ODEs with Dirac-delta impulse inputs",
+       purpose = "Model a sudden kick or impact and solve the resulting initial-value problem with Laplace transforms.",
+       url = "https://www.youtube.com/watch?v=LOoM3qlpYuU"),
+  list(lesson = "06", creator = "Dr. Trefor Bazett",
+       title = "Convolution of two functions",
+       purpose = "Learn the definition and mechanics behind the convolution theorem used in transform problems.",
+       url = "https://www.youtube.com/watch?v=AgKQQtEc9dk")
 )
 
 differential_videos <- list(
-  list(lesson = "9.1", title = "The Initial Value Problem",
+  list(lesson = "9.1", creator = "The Organic Chemistry Tutor",
+       title = "The Initial Value Problem",
        purpose = "Learn how an equation and its starting values combine to determine one specific solution.",
        url = "https://www.youtube.com/watch?v=kwGukY_2qWQ"),
-  list(lesson = "9.2", title = "Separable First-Order Differential Equations",
+  list(lesson = "9.2", creator = "The Organic Chemistry Tutor",
+       title = "Separable First-Order Differential Equations",
        purpose = "Build the separate–integrate–solve habit for the most recognizable first-order family.",
        url = "https://www.youtube.com/watch?v=C7nuJcJriWM"),
-  list(lesson = "9.9", title = "Homogeneous Differential Equations",
-       purpose = "Practise the y=vx substitution for first-order homogeneous equations.",
-       url = "https://www.youtube.com/watch?v=ZEJVyybsiT4"),
-  list(lesson = "9.10", title = "First-Order Linear Differential Equations",
+  list(lesson = "9.10", creator = "The Organic Chemistry Tutor",
+       title = "First-Order Linear Differential Equations",
        purpose = "Review standard form and the integrating-factor method.",
        url = "https://www.youtube.com/watch?v=gd1FYn86P0c"),
-  list(lesson = "9.11", title = "Bernoulli's Differential Equation",
-       purpose = "See how a nonlinear-looking equation can be converted into a first-order linear equation.",
-       url = "https://www.youtube.com/watch?v=BoI_ej-T0V4")
+  list(lesson = "9.12", creator = "The Organic Chemistry Tutor",
+       title = "Second-Order Linear Differential Equations",
+       purpose = "Match characteristic roots to the solution forms explored in the Linear ODE Lab.",
+       url = "https://www.youtube.com/watch?v=uI2xt8nTOlQ"),
+  list(lesson = "9.13", creator = "Jeffrey Chasnov",
+       title = "Phase portraits of linear systems",
+       purpose = "Read the stability and motion of a two-state system from its eigenvalues and phase portrait.",
+       url = "https://www.youtube.com/watch?v=UO_dgXa5szg")
 )
 
 linear_algebra_videos <- list(
-  list(lesson = "15.7", title = "Elementary Row Operations",
+  list(lesson = "15.7", creator = "The Organic Chemistry Tutor",
+       title = "Elementary Row Operations",
        purpose = "Review the legal row moves that preserve the solution set of a linear system.",
        url = "https://www.youtube.com/watch?v=9PNCjHemIhI"),
-  list(lesson = "15.8", title = "Gaussian Elimination and Row-Echelon Form",
+  list(lesson = "15.8", creator = "The Organic Chemistry Tutor",
+       title = "Gaussian Elimination and Row-Echelon Form",
        purpose = "Practise finding pivots, solving systems, and recognizing free variables.",
        url = "https://www.youtube.com/watch?v=eDb6iugi6Uk"),
-  list(lesson = "15.11", title = "Inverse of a 2×2 Matrix",
+  list(lesson = "15.11", creator = "The Organic Chemistry Tutor",
+       title = "Inverse of a 2×2 Matrix",
        purpose = "Connect the inverse formula to the determinant and the solution of Ax=b.",
        url = "https://www.youtube.com/watch?v=aiBgjz5xbyg"),
-  list(lesson = "15.13", title = "Determinants of 2×2 and 3×3 Matrices",
+  list(lesson = "15.13", creator = "The Organic Chemistry Tutor",
+       title = "Determinants of 2×2 and 3×3 Matrices",
        purpose = "Build speed with determinant calculations before using determinant identities and eigenvalue tests.",
        url = "https://www.youtube.com/watch?v=3ROzG6n4yMc"),
-  list(lesson = "15.14", title = "Determinant of a 3×3 Matrix",
-       purpose = "Work through cofactor expansion and sign patterns on a larger matrix.",
-       url = "https://www.youtube.com/watch?v=eYjSu_xXUUQ")
+  list(lesson = "15.14", creator = "3Blue1Brown",
+       title = "Eigenvectors and eigenvalues",
+       purpose = "See geometrically why eigenvector directions stay fixed while a matrix transformation scales them.",
+       url = "https://www.youtube.com/watch?v=PFDu9oVAE-g"),
+  list(lesson = "15.15", creator = "Dr. Trefor Bazett",
+       title = "Diagonalizing a matrix: full example",
+       purpose = "Build P and D from eigenvectors and eigenvalues, then verify A=PDP⁻¹.",
+       url = "https://www.youtube.com/watch?v=ieWyx2mlZyk")
 )
 
 ui <- fluidPage(
@@ -248,6 +272,8 @@ ui <- fluidPage(
       .video-card p { color:#cbd5e1; line-height:1.6; flex:1; }
       .video-number { color:var(--violet); font-weight:800; letter-spacing:.12em;
         font-size:12px; margin-bottom:10px; }
+      .video-source { color:var(--cyan); font-size:12px; font-weight:750;
+        letter-spacing:.08em; margin-bottom:7px; text-transform:uppercase; }
       .video-link { align-self:flex-start; color:#061019!important; background:var(--cyan)!important;
         border:0!important; border-radius:9px!important; font-weight:750; padding:9px 13px!important; }
       .video-link:hover,.video-link:focus { background:#7dd3fc!important; color:#061019!important; }
@@ -460,9 +486,9 @@ ui <- fluidPage(
               video_lesson_page(
                 "Laplace transform",
                 paste(
-                  "Use these Organic Chemistry Tutor searches as a guided watch list.",
+                  "Every card opens one exact video that matches the named concept.",
                   "Video-Tutor.net does not currently expose a dedicated Laplace chapter,",
-                  "so these links open the matching lessons on the creator's YouTube channel."
+                  "so carefully selected lessons from established mathematics educators fill those gaps."
                 ),
                 laplace_videos,
                 "https://www.video-tutor.net/video-playlists.html"
@@ -987,7 +1013,11 @@ ui <- fluidPage(
                 tabPanel("Video Lessons",
                   video_lesson_page(
                     "Differential equations",
-                    "These lessons come from the Differential Equations chapter of the Organic Chemistry Tutor's Video-Tutor.net calculus catalogue.",
+                    paste(
+                      "Every card opens one exact concept-matched video.",
+                      "Organic Chemistry Tutor lessons are used where a direct match exists;",
+                      "the phase-portrait lesson comes from an engineering-focused educator."
+                    ),
                     differential_videos,
                     "https://www.video-tutor.net/differential-equations.html"
                   )
@@ -1203,7 +1233,11 @@ ui <- fluidPage(
                 tabPanel("Video Lessons",
                   video_lesson_page(
                     "Linear algebra",
-                    "These matrix lessons come from the Organic Chemistry Tutor's Video-Tutor.net algebra catalogue and reinforce the system-solving tools used throughout this section.",
+                    paste(
+                      "Every card opens one exact concept-matched video.",
+                      "Organic Chemistry Tutor lessons are used where a direct match exists;",
+                      "specialist visual lessons fill the eigenvalue and diagonalization gaps."
+                    ),
                     linear_algebra_videos,
                     "https://www.video-tutor.net/matrices.html"
                   )
