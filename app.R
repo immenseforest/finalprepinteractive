@@ -381,21 +381,204 @@ ui <- fluidPage(
       th,td { padding:12px 10px; border-bottom:1px solid var(--border); }
       code { background:#0c080d; color:#e4c987; padding:3px 6px; }
       a { color:var(--cyan); }
+      .theme-toggle { position:absolute; z-index:5; top:28px;
+        right:max(24px,calc((100vw - 1240px)/2)); min-width:118px; padding:9px 13px;
+        color:#fff5dc; background:linear-gradient(145deg,var(--wine),#3e1428);
+        border:1px solid var(--cyan); border-radius:9px; font-weight:750;
+        box-shadow:0 6px 18px rgba(0,0,0,.32); }
+      .theme-toggle:hover,.theme-toggle:focus { color:#1b1207; background:var(--gold-soft);
+        outline:2px solid rgba(236,217,157,.28); outline-offset:2px; }
+      .legacy-browser-chrome { display:none; }
+
+      /* Legacy mode keeps the information architecture but recreates a
+         late-1990s/early-2000s Internet Explorer and Windows desktop aesthetic. */
+      body.legacy-mode { background:#c0c0c0; color:#000; font-family:'Times New Roman',Times,serif; }
+      .legacy-mode .legacy-browser-chrome { display:block; color:#000;
+        font-family:'MS Sans Serif',Tahoma,Arial,sans-serif; font-size:12px;
+        background:#c0c0c0; border:2px outset #fff; }
+      .legacy-titlebar { display:flex; align-items:center; justify-content:space-between;
+        min-height:25px; padding:3px 5px; color:#fff; font-weight:700;
+        background:linear-gradient(90deg,#000080,#1084d0); }
+      .legacy-window-buttons { display:flex; gap:3px; }
+      .legacy-window-buttons span { width:18px; height:17px; display:flex; align-items:center;
+        justify-content:center; color:#000; background:#c0c0c0; border:2px outset #fff;
+        font-size:11px; line-height:1; }
+      .legacy-menubar { display:flex; gap:18px; padding:4px 8px; border-bottom:1px solid #808080; }
+      .legacy-menubar span::first-letter { text-decoration:underline; }
+      .legacy-toolbar { display:flex; flex-wrap:wrap; gap:5px; align-items:center; padding:5px 7px;
+        border-top:1px solid #fff; border-bottom:1px solid #808080; }
+      .legacy-tool { min-width:58px; padding:4px 7px; text-align:center; background:#c0c0c0;
+        border:2px outset #fff; }
+      .legacy-address { display:grid; grid-template-columns:auto 1fr auto; gap:6px; align-items:center;
+        padding:5px 7px; border-top:1px solid #fff; }
+      .legacy-address-box { min-height:24px; padding:4px 7px; overflow:hidden; color:#000;
+        white-space:nowrap; background:#fff; border:2px inset #fff; font-family:Arial,sans-serif; }
+      .legacy-go { padding:3px 8px; background:#c0c0c0; border:2px outset #fff; }
+      .legacy-mode .app-shell { min-height:calc(100vh - 100px); background:#fff; border:2px inset #fff; }
+      .legacy-mode .hero { padding:25px max(18px,calc((100vw - 1240px)/2));
+        background:#000080; border:0; border-bottom:4px ridge #c0c0c0; }
+      .legacy-mode .hero::after { display:none; }
+      .legacy-mode .hero .eyebrow { color:#ffff00; font-family:Arial,sans-serif; letter-spacing:.08em; }
+      .legacy-mode h1 { max-width:calc(100% - 145px); color:#fff; font-family:'Times New Roman',Times,serif;
+        font-size:clamp(28px,4vw,44px); text-shadow:none; letter-spacing:0; }
+      .legacy-mode h2,.legacy-mode h3,.legacy-mode h4 {
+        color:#000080; font-family:'Times New Roman',Times,serif; }
+      .legacy-mode .subtitle { color:#fff; }
+      .legacy-mode .theme-toggle { top:22px; color:#000; background:#c0c0c0;
+        border:2px outset #fff; border-radius:0; box-shadow:none; font-family:Arial,sans-serif; }
+      .legacy-mode .theme-toggle:hover,.legacy-mode .theme-toggle:focus {
+        color:#000; background:#d4d0c8; border-style:inset; outline:1px dotted #000; }
+      .legacy-mode .content { max-width:none; padding:12px; background:#fff; }
+      .legacy-mode .content .row { margin-left:0; margin-right:0; }
+      .legacy-mode #main_navigation { position:static; display:grid; top:auto; padding:4px;
+        margin:0 0 10px; border:2px ridge #fff; border-radius:0; background:#c0c0c0;
+        box-shadow:none; backdrop-filter:none; }
+      .legacy-mode #main_navigation>li>a { min-height:42px; padding:7px 5px; color:#000;
+        border:2px outset #fff!important; border-radius:0; background:#c0c0c0;
+        font-family:Arial,sans-serif; font-size:13px; text-decoration:none; }
+      .legacy-mode #main_navigation>li.active>a,.legacy-mode #main_navigation>li.active>a:hover,
+      .legacy-mode #main_navigation>li>a:hover,.legacy-mode #main_navigation>li>a:focus {
+        color:#fff; background:#000080; border:2px inset #fff!important; box-shadow:none; }
+      .legacy-mode #laplace_navigation,.legacy-mode #differential_navigation,
+      .legacy-mode #linear_algebra_navigation,.legacy-mode #reference_navigation {
+        gap:3px; padding:4px; margin:0 0 10px; border:2px groove #fff; border-radius:0;
+        background:#c0c0c0; }
+      .legacy-mode #laplace_navigation>li>a,.legacy-mode #differential_navigation>li>a,
+      .legacy-mode #linear_algebra_navigation>li>a,.legacy-mode #reference_navigation>li>a {
+        min-height:40px; padding:6px 7px; color:#000; border:2px outset #fff;
+        border-radius:0; background:#c0c0c0; font-family:Arial,sans-serif; text-decoration:none; }
+      .legacy-mode #laplace_navigation>li.active>a,.legacy-mode #differential_navigation>li.active>a,
+      .legacy-mode #linear_algebra_navigation>li.active>a,.legacy-mode #reference_navigation>li.active>a,
+      .legacy-mode #laplace_navigation>li>a:hover,.legacy-mode #differential_navigation>li>a:hover,
+      .legacy-mode #linear_algebra_navigation>li>a:hover,.legacy-mode #reference_navigation>li>a:hover {
+        color:#fff; background:#000080; border:2px inset #fff; box-shadow:none; }
+      .legacy-mode #engineering_navigation { gap:3px; padding:3px; margin-bottom:9px;
+        background:#c0c0c0; border:2px groove #fff; }
+      .legacy-mode #engineering_navigation>li>a { color:#0000ee; border-radius:0;
+        text-decoration:underline; font-family:Arial,sans-serif; }
+      .legacy-mode #engineering_navigation>li.active>a,
+      .legacy-mode #engineering_navigation>li>a:hover { color:#fff; background:#000080; }
+      .legacy-mode .module-heading { grid-template-columns:auto 1fr; gap:12px; margin:0 0 9px;
+        padding:10px; color:#000; border:2px ridge #fff; border-radius:0; background:#ffffe1; }
+      .legacy-mode .module-seal { width:45px; height:45px; color:#fff; border:2px outset #fff;
+        border-radius:0; background:#000080; box-shadow:none; font-family:'Times New Roman',serif; }
+      .legacy-mode .module-kicker { color:#800000; font-family:Arial,sans-serif; letter-spacing:.06em; }
+      .legacy-mode .module-heading h2 { margin:1px 0 3px; color:#000080; }
+      .legacy-mode .module-heading p,.legacy-mode .module-route { color:#000; }
+      .legacy-mode .card { color:#000; background:#fff; border:2px ridge #c0c0c0;
+        border-radius:0; box-shadow:none; }
+      .legacy-mode .card::before { display:none; }
+      .legacy-mode .eyebrow { color:#800000; font-family:Arial,sans-serif; }
+      .legacy-mode .concept strong { color:#000080; }
+      .legacy-mode .hint,.legacy-mode .metric span { color:#444; }
+      .legacy-mode .formula,.legacy-mode .metric { color:#000; background:#ffffe1;
+        border:2px inset #fff; border-radius:0; }
+      .legacy-mode .formula { border-left:5px solid #000080; }
+      .legacy-mode .control-label,.legacy-mode .video-card p,.legacy-mode .learning-path {
+        color:#000; }
+      .legacy-mode .form-control,.legacy-mode .selectize-input,
+      .legacy-mode .selectize-control.single .selectize-input.input-active,
+      .legacy-mode .selectize-dropdown { color:#000!important; background:#fff!important;
+        border:2px inset #fff!important; border-radius:0; font-family:Arial,sans-serif; }
+      .legacy-mode .selectize-dropdown .active { color:#fff; background:#000080; }
+      .legacy-mode .irs--shiny .irs-line { background:#c0c0c0; border:2px inset #fff; border-radius:0; }
+      .legacy-mode .irs--shiny .irs-bar { background:#000080; border:0; }
+      .legacy-mode .irs--shiny .irs-handle { background:#c0c0c0; border:2px outset #fff; border-radius:0; }
+      .legacy-mode .irs--shiny .irs-single { color:#fff; background:#000080; border-radius:0; }
+      .legacy-mode .preset-actions .btn,.legacy-mode .video-link,.legacy-mode .btn {
+        color:#000!important; background:#c0c0c0!important; border:2px outset #fff!important;
+        border-radius:0!important; box-shadow:none!important; font-family:Arial,sans-serif; }
+      .legacy-mode .preset-actions .btn:hover,.legacy-mode .video-link:hover,.legacy-mode .btn:hover {
+        color:#000!important; background:#d4d0c8!important; border-style:inset!important; }
+      .legacy-mode .video-number,.legacy-mode .video-source { color:#800000; }
+      .legacy-mode .help-tip { color:#000080; border-color:#000080; border-radius:0; }
+      .legacy-mode .help-tip::after { color:#000; background:#ffffe1; border:2px outset #fff;
+        border-radius:0; font-family:Arial,sans-serif; }
+      .legacy-mode table { color:#000; border-collapse:collapse; background:#fff; }
+      .legacy-mode th { color:#fff; background:#000080; font-family:Arial,sans-serif; }
+      .legacy-mode th,.legacy-mode td { border:1px solid #808080; }
+      .legacy-mode code { color:#000; background:#ffffe1; border:1px solid #808080; }
+      .legacy-mode a,.legacy-mode .source-link { color:#0000ee; text-decoration:underline; }
+      .legacy-mode .plot-wrap { background:#fff; }
       @media(max-width:1050px){ #main_navigation{grid-template-columns:repeat(3,minmax(0,1fr));position:static;} }
       @media(max-width:800px){ .concept,.video-grid{grid-template-columns:1fr;} .hero{padding:30px 20px;}
         .content{padding:22px 16px;} .metric-row{grid-template-columns:1fr;}
-        .module-heading{grid-template-columns:1fr;} .module-seal{width:46px;height:46px;} }
+        .module-heading{grid-template-columns:1fr;} .module-seal{width:46px;height:46px;}
+        .theme-toggle{position:static;margin-top:16px;} .legacy-mode h1{max-width:none;}
+        .legacy-mode .theme-toggle{position:static;} }
       @media(max-width:560px){ #main_navigation{grid-template-columns:repeat(2,minmax(0,1fr));}
         #laplace_navigation>li,#differential_navigation>li,#linear_algebra_navigation>li,
-        #reference_navigation>li{flex-basis:100%;} }
+        #reference_navigation>li{flex-basis:100%;}
+        .legacy-address{grid-template-columns:auto 1fr;}.legacy-go{display:none;} }
+    "))
+    ,
+    tags$script(HTML("
+      (function () {
+        function initializeThemeToggle() {
+          var button = document.getElementById('theme_toggle');
+          if (!button || button.dataset.ready === 'true') return;
+          button.dataset.ready = 'true';
+
+          function setLegacyMode(isLegacy) {
+            document.body.classList.toggle('legacy-mode', isLegacy);
+            button.setAttribute('aria-pressed', isLegacy ? 'true' : 'false');
+            button.textContent = isLegacy ? 'Modern UI' : 'Legacy UI';
+            button.title = isLegacy ?
+              'Switch to the modern Baroque interface' :
+              'Switch to the legacy Internet Explorer interface';
+            if (window.Shiny && Shiny.setInputValue) {
+              Shiny.setInputValue('ui_theme', isLegacy ? 'legacy' : 'modern', {priority: 'event'});
+            }
+          }
+
+          button.addEventListener('click', function () {
+            setLegacyMode(!document.body.classList.contains('legacy-mode'));
+          });
+          setLegacyMode(false);
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initializeThemeToggle);
+        } else {
+          initializeThemeToggle();
+        }
+      })();
     "))
   ),
   div(class = "app-shell",
+      div(class = "legacy-browser-chrome", `aria-hidden` = "true",
+        div(class = "legacy-titlebar",
+          span("FinalPrep Interactive - Microsoft Internet Explorer"),
+          div(class = "legacy-window-buttons", span("_"), span("□"), span("×"))
+        ),
+        div(class = "legacy-menubar",
+          span("File"), span("Edit"), span("View"), span("Favorites"), span("Tools"), span("Help")
+        ),
+        div(class = "legacy-toolbar",
+          span(class = "legacy-tool", "← Back"),
+          span(class = "legacy-tool", "Forward →"),
+          span(class = "legacy-tool", "Stop"),
+          span(class = "legacy-tool", "Refresh"),
+          span(class = "legacy-tool", "Home"),
+          span(class = "legacy-tool", "Search"),
+          span(class = "legacy-tool", "Favorites")
+        ),
+        div(class = "legacy-address",
+          strong("Address"),
+          div(class = "legacy-address-box", "http://www.finalprepinteractive.edu/index.htm"),
+          span(class = "legacy-go", "Go")
+        )
+      ),
       div(class = "hero",
           div(class = "eyebrow", "Interactive mathematics"),
           h1("Engineering Analysis B Learning Lab"),
           div(class = "subtitle",
-              "Build exam-ready intuition for differential equations, Laplace transforms, and linear algebra.")
+              "Build exam-ready intuition for differential equations, Laplace transforms, and linear algebra."),
+          tags$button(
+            id = "theme_toggle", type = "button", class = "theme-toggle",
+            `aria-pressed` = "false", title = "Switch to the legacy Internet Explorer interface",
+            "Legacy UI"
+          )
       ),
       div(class = "content",
           tabsetPanel(id = "main_navigation", type = "tabs",
