@@ -233,9 +233,9 @@ ui <- fluidPage(
   tags$head(
     tags$meta(name = "viewport", content = "width=device-width, initial-scale=1"),
     tags$style(HTML("
-      :root { color-scheme: dark; --bg:#09070b; --panel:#171118; --panel2:#221620;
-        --text:#f3ead7; --muted:#baa98f; --cyan:#d6b567; --violet:#a5405d;
-        --green:#4f8c78; --border:#5c472e; --wine:#651d3b; --wine-deep:#32101f;
+      :root { color-scheme: dark; --bg:#000000; --panel:#08090b; --panel2:#0d0e11;
+        --text:#f4f1e9; --muted:#aaa49b; --cyan:#d6b567; --violet:#a5405d;
+        --green:#4f8c78; --border:#3f372a; --wine:#431328; --wine-deep:#1a0a11;
         --gold-soft:#ecd99d; --ink:#0d090e; }
       * { box-sizing:border-box; }
       body {
@@ -390,7 +390,83 @@ ui <- fluidPage(
         outline:2px solid rgba(236,217,157,.28); outline-offset:2px; }
       .legacy-browser-chrome { display:none; }
 
-      /* Legacy mode keeps the information architecture but recreates a
+      /* True dark mode: near-black structure with restrained Baroque gold accents. */
+      body:not(.legacy-mode) {
+        background:
+          radial-gradient(circle at 18% -8%,rgba(87,24,50,.18) 0,transparent 34%),
+          radial-gradient(circle at 88% 12%,rgba(122,91,43,.10) 0,transparent 28%),
+          #000;
+      }
+      body:not(.legacy-mode) .hero {
+        background:linear-gradient(90deg,#070709,#000 64%,#080706);
+        border-bottom-color:rgba(214,181,103,.48);
+      }
+      body:not(.legacy-mode) .hero::after { background:#000; }
+      body:not(.legacy-mode) .theme-toggle {
+        background:linear-gradient(145deg,#151518,#070708);
+        border-color:rgba(214,181,103,.78); box-shadow:0 7px 22px rgba(0,0,0,.68);
+      }
+      body:not(.legacy-mode) #main_navigation {
+        background:rgba(4,4,5,.96); border-color:rgba(214,181,103,.34);
+        box-shadow:0 14px 38px rgba(0,0,0,.72);
+      }
+      body:not(.legacy-mode) #main_navigation>li.active>a,
+      body:not(.legacy-mode) #main_navigation>li.active>a:hover,
+      body:not(.legacy-mode) #main_navigation>li>a:hover,
+      body:not(.legacy-mode) #main_navigation>li>a:focus {
+        color:#fff7e4; background:linear-gradient(145deg,#18181b,#09090a);
+        border-color:var(--cyan)!important; box-shadow:inset 0 -2px 0 var(--cyan);
+      }
+      body:not(.legacy-mode) #laplace_navigation,
+      body:not(.legacy-mode) #differential_navigation,
+      body:not(.legacy-mode) #linear_algebra_navigation,
+      body:not(.legacy-mode) #reference_navigation {
+        background:linear-gradient(90deg,#08080a,#030304);
+        border-color:rgba(214,181,103,.28);
+      }
+      body:not(.legacy-mode) #laplace_navigation>li>a,
+      body:not(.legacy-mode) #differential_navigation>li>a,
+      body:not(.legacy-mode) #linear_algebra_navigation>li>a,
+      body:not(.legacy-mode) #reference_navigation>li>a {
+        background:#050506; border-color:#312b22;
+      }
+      body:not(.legacy-mode) #laplace_navigation>li.active>a,
+      body:not(.legacy-mode) #differential_navigation>li.active>a,
+      body:not(.legacy-mode) #linear_algebra_navigation>li.active>a,
+      body:not(.legacy-mode) #reference_navigation>li.active>a,
+      body:not(.legacy-mode) #laplace_navigation>li>a:hover,
+      body:not(.legacy-mode) #differential_navigation>li>a:hover,
+      body:not(.legacy-mode) #linear_algebra_navigation>li>a:hover,
+      body:not(.legacy-mode) #reference_navigation>li>a:hover {
+        background:linear-gradient(145deg,#17171a,#080809);
+      }
+      body:not(.legacy-mode) #engineering_navigation>li.active>a,
+      body:not(.legacy-mode) #engineering_navigation>li>a:hover { background:#171114; }
+      body:not(.legacy-mode) .module-heading {
+        background:linear-gradient(115deg,#0d0d10,#050506 55%,#0b0907);
+        border-color:rgba(214,181,103,.3);
+      }
+      body:not(.legacy-mode) .module-seal {
+        background:radial-gradient(circle,#25101a 0,#08080a 72%);
+      }
+      body:not(.legacy-mode) .card {
+        background:linear-gradient(145deg,rgba(13,14,17,.99),rgba(5,5,6,.99));
+        border-color:#302a22; box-shadow:0 16px 40px rgba(0,0,0,.58);
+      }
+      body:not(.legacy-mode) .form-control,
+      body:not(.legacy-mode) .selectize-input,
+      body:not(.legacy-mode) .selectize-control.single .selectize-input.input-active,
+      body:not(.legacy-mode) .selectize-dropdown,
+      body:not(.legacy-mode) .formula,
+      body:not(.legacy-mode) .metric { background:#040405!important; }
+      body:not(.legacy-mode) .selectize-dropdown .active { background:#17171a; }
+      body:not(.legacy-mode) .preset-actions .btn { background:#111114; }
+      body:not(.legacy-mode) .preset-actions .btn:hover,
+      body:not(.legacy-mode) .preset-actions .btn:focus { background:#1a1a1e; }
+      body:not(.legacy-mode) .help-tip::after,
+      body:not(.legacy-mode) code { background:#030304; }
+
+      /* Bright mode keeps the information architecture but recreates a
          late-1990s/early-2000s Internet Explorer and Windows desktop aesthetic. */
       body.legacy-mode { background:#c0c0c0; color:#000; font-family:'Times New Roman',Times,serif; }
       .legacy-mode .legacy-browser-chrome { display:block; color:#000;
@@ -522,10 +598,10 @@ ui <- fluidPage(
           function setLegacyMode(isLegacy) {
             document.body.classList.toggle('legacy-mode', isLegacy);
             button.setAttribute('aria-pressed', isLegacy ? 'true' : 'false');
-            button.textContent = isLegacy ? 'Modern UI' : 'Legacy UI';
+            button.textContent = isLegacy ? 'Dark Mode' : 'Bright Mode';
             button.title = isLegacy ?
-              'Switch to the modern Baroque interface' :
-              'Switch to the legacy Internet Explorer interface';
+              'Switch to Dark Mode' :
+              'Switch to Bright Mode';
             if (window.Shiny && Shiny.setInputValue) {
               Shiny.setInputValue('ui_theme', isLegacy ? 'legacy' : 'modern', {priority: 'event'});
             }
@@ -576,8 +652,8 @@ ui <- fluidPage(
               "Build exam-ready intuition for differential equations, Laplace transforms, and linear algebra."),
           tags$button(
             id = "theme_toggle", type = "button", class = "theme-toggle",
-            `aria-pressed` = "false", title = "Switch to the legacy Internet Explorer interface",
-            "Legacy UI"
+            `aria-pressed` = "false", title = "Switch to Bright Mode",
+            "Bright Mode"
           )
       ),
       div(class = "content",
@@ -1832,10 +1908,10 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
-  plot_bg <- "#171118"
-  plot_axis <- "#baa98f"
-  plot_text <- "#eadfc9"
-  plot_grid <- "#4a3735"
+  plot_bg <- "#08090b"
+  plot_axis <- "#a6a6aa"
+  plot_text <- "#eeeeea"
+  plot_grid <- "#292a2e"
   plot_gold <- "#d6b567"
   plot_ruby <- "#a5405d"
   plot_emerald <- "#4f8c78"
