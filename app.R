@@ -111,6 +111,19 @@ math_inline <- function(tex, label) {
   )
 }
 
+module_header <- function(number, title, description) {
+  div(
+    class = "module-heading",
+    div(class = "module-seal", number),
+    div(
+      div(class = "module-kicker", "Course module"),
+      h2(title),
+      tags$p(description),
+      div(class = "module-route", "Overview  →  Explore  →  Watch  →  Apply")
+    )
+  )
+}
+
 video_lesson_page <- function(topic, intro, videos, catalogue_url) {
   div(
     div(class = "card",
@@ -154,7 +167,7 @@ laplace_videos <- list(
        url = "https://www.youtube.com/watch?v=fuxFrpaMLtw"),
   list(lesson = "04", creator = "Dr. Trefor Bazett",
        title = "Laplace transform of a piecewise unit-step function",
-       purpose = "Apply the unit-step function and second-shifting theorem used in the Property Lab.",
+       purpose = "Apply the unit-step function and second-shifting theorem used in the Properties Lab.",
        url = "https://www.youtube.com/watch?v=yHzXAoFjU3k"),
   list(lesson = "05", creator = "Dr. Trefor Bazett",
        title = "Solving ODEs with Dirac-delta impulse inputs",
@@ -220,44 +233,103 @@ ui <- fluidPage(
   tags$head(
     tags$meta(name = "viewport", content = "width=device-width, initial-scale=1"),
     tags$style(HTML("
-      :root { color-scheme: dark; --bg:#080b12; --panel:#111723; --panel2:#151d2b;
-        --text:#eef2ff; --muted:#94a3b8; --cyan:#38bdf8; --violet:#a78bfa;
-        --green:#34d399; --border:#263246; }
+      :root { color-scheme: dark; --bg:#09070b; --panel:#171118; --panel2:#221620;
+        --text:#f3ead7; --muted:#baa98f; --cyan:#d6b567; --violet:#a5405d;
+        --green:#4f8c78; --border:#5c472e; --wine:#651d3b; --wine-deep:#32101f;
+        --gold-soft:#ecd99d; --ink:#0d090e; }
       * { box-sizing:border-box; }
-      body { background:radial-gradient(circle at 20% 0%,#111d35 0,#080b12 38%);
-        color:var(--text); font-family:Inter,system-ui,-apple-system,sans-serif; }
+      body {
+        background:
+          radial-gradient(circle at 18% -8%,rgba(101,29,59,.55) 0,transparent 36%),
+          radial-gradient(circle at 88% 12%,rgba(80,60,31,.24) 0,transparent 30%),
+          linear-gradient(145deg,#0d090e 0,var(--bg) 58%,#100a0f 100%);
+        color:var(--text); font-family:Inter,system-ui,-apple-system,sans-serif;
+      }
       .container-fluid { padding:0; }
       .app-shell { min-height:100vh; }
-      .hero { padding:34px max(24px,calc((100vw - 1240px)/2)); border-bottom:1px solid var(--border); }
+      .hero { position:relative; padding:38px max(24px,calc((100vw - 1240px)/2));
+        border-bottom:3px double rgba(214,181,103,.55);
+        background:linear-gradient(90deg,rgba(50,16,31,.82),rgba(13,9,14,.38) 62%,rgba(77,55,28,.16)); }
+      .hero::after { content:'❦'; position:absolute; left:50%; bottom:-17px; transform:translateX(-50%);
+        width:44px; height:30px; display:flex; align-items:center; justify-content:center;
+        color:var(--cyan); background:var(--bg); font-family:Georgia,serif; font-size:22px; }
       .eyebrow { color:var(--cyan); text-transform:uppercase; letter-spacing:.16em;
         font-weight:700; font-size:12px; }
-      h1 { margin:8px 0 7px; font-size:clamp(29px,4vw,48px); font-weight:750; letter-spacing:-.04em; }
+      h1,h2,h3,h4 { font-family:Georgia,'Times New Roman',serif; }
+      h1 { margin:8px 0 7px; color:var(--gold-soft); font-size:clamp(29px,4vw,48px);
+        font-weight:700; letter-spacing:-.025em; text-shadow:0 2px 18px rgba(0,0,0,.4); }
       .subtitle { color:var(--muted); max-width:700px; font-size:16px; }
-      .content { max-width:1240px; margin:auto; padding:24px; }
-      .nav-tabs { border:0; margin-bottom:22px; display:flex; gap:8px; }
-      .nav-tabs>li>a { color:var(--muted); border:1px solid transparent!important;
-        border-radius:10px; background:transparent; }
-      .nav-tabs>li.active>a,.nav-tabs>li.active>a:hover,.nav-tabs>li>a:hover {
-        color:var(--text); background:var(--panel2); border-color:var(--border)!important; }
-      .nav-pills { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
-      .nav-pills>li>a { color:var(--muted); border:1px solid var(--border); border-radius:10px; }
-      .nav-pills>li.active>a,.nav-pills>li.active>a:hover,.nav-pills>li>a:hover {
-        color:var(--text); background:#1d2b41; }
-      .card { background:linear-gradient(145deg,rgba(21,29,43,.96),rgba(13,18,29,.96));
-        border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:20px;
-        box-shadow:0 14px 35px rgba(0,0,0,.2); }
+      .content { max-width:1240px; margin:auto; padding:30px 24px 40px; }
+      #main_navigation { position:sticky; top:10px; z-index:70; display:grid;
+        grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px; float:none; padding:9px;
+        margin:0 0 26px; border:1px solid rgba(214,181,103,.42); border-radius:15px;
+        background:rgba(16,10,16,.93); box-shadow:0 14px 34px rgba(0,0,0,.38);
+        backdrop-filter:blur(18px); }
+      #main_navigation::before,#main_navigation::after,
+      #laplace_navigation::before,#laplace_navigation::after,
+      #differential_navigation::before,#differential_navigation::after,
+      #linear_algebra_navigation::before,#linear_algebra_navigation::after,
+      #reference_navigation::before,#reference_navigation::after,
+      #engineering_navigation::before,#engineering_navigation::after { display:none; content:none; }
+      #main_navigation>li { float:none; margin:0; }
+      #main_navigation>li>a { display:flex; min-height:52px; align-items:center; justify-content:center;
+        padding:10px 8px; color:var(--muted); text-align:center; line-height:1.2;
+        border:1px solid transparent!important; border-radius:10px; background:transparent; }
+      #main_navigation>li.active>a,#main_navigation>li.active>a:hover,#main_navigation>li>a:hover,
+      #main_navigation>li>a:focus { color:#fff6df; background:linear-gradient(145deg,var(--wine),#3e1428);
+        border-color:rgba(214,181,103,.78)!important; box-shadow:inset 0 0 0 1px rgba(236,217,157,.12); }
+      #laplace_navigation,#differential_navigation,#linear_algebra_navigation,#reference_navigation {
+        display:flex; flex-wrap:wrap; gap:8px; padding:9px; margin:0 0 22px;
+        border:1px solid rgba(92,71,46,.9); border-radius:13px;
+        background:linear-gradient(90deg,rgba(50,16,31,.56),rgba(24,16,23,.88)); }
+      #laplace_navigation>li,#differential_navigation>li,#linear_algebra_navigation>li,
+      #reference_navigation>li { float:none; flex:1 1 165px; margin:0; }
+      #laplace_navigation>li>a,#differential_navigation>li>a,#linear_algebra_navigation>li>a,
+      #reference_navigation>li>a { display:flex; min-height:48px; align-items:center; justify-content:center;
+        padding:9px 12px; color:var(--muted); text-align:center; line-height:1.25;
+        border:1px solid rgba(92,71,46,.9); border-radius:9px; background:rgba(13,9,14,.42); }
+      #laplace_navigation>li.active>a,#differential_navigation>li.active>a,
+      #linear_algebra_navigation>li.active>a,#reference_navigation>li.active>a,
+      #laplace_navigation>li>a:hover,#differential_navigation>li>a:hover,
+      #linear_algebra_navigation>li>a:hover,#reference_navigation>li>a:hover {
+        color:#fff5dc; border-color:var(--cyan); background:linear-gradient(145deg,#4d1930,#28101e);
+        box-shadow:inset 0 -2px 0 var(--cyan); }
+      #engineering_navigation { display:flex; flex-wrap:wrap; gap:8px; padding:7px;
+        margin:0 0 20px; border-bottom:1px solid var(--border); }
+      #engineering_navigation>li { float:none; margin:0; }
+      #engineering_navigation>li>a { color:var(--muted); border:0; border-radius:8px; }
+      #engineering_navigation>li.active>a,#engineering_navigation>li>a:hover {
+        color:var(--gold-soft); background:rgba(101,29,59,.48); }
+      .module-heading { display:grid; grid-template-columns:auto 1fr; gap:18px; align-items:center;
+        margin:2px 0 18px; padding:19px 21px; border:1px solid rgba(214,181,103,.38);
+        border-radius:15px; background:linear-gradient(115deg,rgba(101,29,59,.35),rgba(23,17,24,.88) 48%,rgba(77,56,30,.2)); }
+      .module-seal { width:54px; height:54px; display:flex; align-items:center; justify-content:center;
+        border:1px solid var(--cyan); border-radius:50%; color:var(--gold-soft);
+        background:radial-gradient(circle,#6b203e 0,#32101f 70%); font-family:Georgia,serif;
+        font-size:22px; box-shadow:0 0 0 4px rgba(214,181,103,.09); }
+      .module-kicker { color:var(--cyan); text-transform:uppercase; letter-spacing:.14em;
+        font-size:11px; font-weight:750; }
+      .module-heading h2 { margin:3px 0 4px; color:var(--gold-soft); font-size:25px; }
+      .module-heading p { margin:0; color:var(--muted); }
+      .module-route { margin-top:8px; color:#d9c8ab; font-size:12px; letter-spacing:.04em; }
+      .card { position:relative;
+        background:linear-gradient(145deg,rgba(31,22,29,.97),rgba(18,13,19,.97));
+        border:1px solid rgba(92,71,46,.82); border-radius:14px; padding:20px; margin-bottom:20px;
+        box-shadow:0 14px 35px rgba(0,0,0,.28); }
+      .card::before { content:''; position:absolute; left:12px; right:12px; top:0; height:1px;
+        background:linear-gradient(90deg,transparent,rgba(214,181,103,.35),transparent); }
       .card h3 { margin:0 0 14px; font-size:17px; }
-      .control-label { color:#cbd5e1; font-size:13px; margin-bottom:7px; }
+      .control-label { color:#ddcfb8; font-size:13px; margin-bottom:7px; }
       .form-control, .selectize-input, .selectize-control.single .selectize-input.input-active {
-        background:#0b101a!important; color:var(--text)!important; border:1px solid var(--border)!important;
+        background:#0f0a10!important; color:var(--text)!important; border:1px solid var(--border)!important;
         border-radius:9px; box-shadow:none!important; }
-      .selectize-dropdown { background:#0b101a; color:var(--text); border-color:var(--border); }
-      .selectize-dropdown .active { background:#1d2b41; color:white; }
+      .selectize-dropdown { background:#0f0a10; color:var(--text); border-color:var(--border); }
+      .selectize-dropdown .active { background:var(--wine); color:white; }
       .irs--shiny .irs-bar { background:linear-gradient(90deg,var(--cyan),var(--violet)); border:0; }
       .irs--shiny .irs-handle { background:var(--text); border:2px solid var(--cyan); }
-      .irs--shiny .irs-line { background:#263246; border:0; }
-      .irs--shiny .irs-single { background:var(--cyan); color:#041018; }
-      .formula { padding:18px 20px; border-left:3px solid var(--violet); background:#0b101a;
+      .irs--shiny .irs-line { background:#4a3735; border:0; }
+      .irs--shiny .irs-single { background:var(--cyan); color:#1b1207; }
+      .formula { padding:18px 20px; border-left:3px solid var(--violet); background:#0f0a10;
         border-radius:0 11px 11px 0; font-family:Cambria Math,serif; font-size:18px;
         overflow-wrap:anywhere; }
       .formula + .formula { margin-top:10px; border-color:var(--cyan); }
@@ -269,25 +341,25 @@ ui <- fluidPage(
       .video-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
       .video-grid .card { margin:0; }
       .video-card { display:flex; flex-direction:column; min-height:220px; }
-      .video-card p { color:#cbd5e1; line-height:1.6; flex:1; }
+      .video-card p { color:#ddcfb8; line-height:1.6; flex:1; }
       .video-number { color:var(--violet); font-weight:800; letter-spacing:.12em;
         font-size:12px; margin-bottom:10px; }
       .video-source { color:var(--cyan); font-size:12px; font-weight:750;
         letter-spacing:.08em; margin-bottom:7px; text-transform:uppercase; }
-      .video-link { align-self:flex-start; color:#061019!important; background:var(--cyan)!important;
+      .video-link { align-self:flex-start; color:#1b1207!important; background:var(--cyan)!important;
         border:0!important; border-radius:9px!important; font-weight:750; padding:9px 13px!important; }
-      .video-link:hover,.video-link:focus { background:#7dd3fc!important; color:#061019!important; }
-      .learning-path { margin:0; padding-left:22px; color:#dbeafe; }
+      .video-link:hover,.video-link:focus { background:var(--gold-soft)!important; color:#1b1207!important; }
+      .learning-path { margin:0; padding-left:22px; color:#eadfc9; }
       .learning-path li { padding:6px 0 6px 5px; }
       .learning-path li::marker { color:var(--violet); font-weight:700; }
       .metric-row { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px; }
-      .metric { background:#0b101a; border:1px solid var(--border); border-radius:12px; padding:14px; }
+      .metric { background:#0f0a10; border:1px solid var(--border); border-radius:12px; padding:14px; }
       .metric span { display:block; color:var(--muted); font-size:12px; margin-bottom:5px; }
       .metric strong { color:var(--text); font-size:18px; font-variant-numeric:tabular-nums; }
       .preset-actions { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px; }
-      .preset-actions .btn { color:var(--text); background:#172033; border:1px solid var(--border);
+      .preset-actions .btn { color:var(--text); background:#321522; border:1px solid var(--border);
         border-radius:9px; }
-      .preset-actions .btn:hover,.preset-actions .btn:focus { color:white; background:#22304a;
+      .preset-actions .btn:hover,.preset-actions .btn:focus { color:white; background:var(--wine);
         border-color:var(--cyan); }
       .source-link { color:var(--cyan); }
       .help-tip { position:relative; display:inline-flex; align-items:center; justify-content:center;
@@ -296,7 +368,7 @@ ui <- fluidPage(
         font-weight:700; cursor:help; vertical-align:2px; outline-offset:3px; }
       .help-tip::after { content:attr(data-tip); position:absolute; z-index:100; left:50%; bottom:calc(100% + 10px);
         width:min(280px,75vw); padding:11px 13px; border:1px solid var(--border); border-radius:10px;
-        background:#070b12; color:var(--text); font-size:13px; font-weight:400; line-height:1.45;
+        background:#0c080d; color:var(--text); font-size:13px; font-weight:400; line-height:1.45;
         font-family:Inter,system-ui,sans-serif; text-align:left; box-shadow:0 12px 30px rgba(0,0,0,.45);
         opacity:0; visibility:hidden; pointer-events:none; transform:translate(-50%,5px);
         transition:opacity .16s ease,transform .16s ease,visibility .16s; }
@@ -304,12 +376,18 @@ ui <- fluidPage(
       .math-formula { overflow-x:auto; overflow-y:hidden; }
       .math-formula .MathJax_Display { margin:0!important; text-align:left!important; }
       .math-inline { white-space:nowrap; }
-      table { width:100%; color:#dbeafe; }
+      table { width:100%; color:#eadfc9; }
       th { color:var(--muted); font-weight:600; text-align:left; }
       th,td { padding:12px 10px; border-bottom:1px solid var(--border); }
-      code { background:#0a0f18; color:#c4b5fd; padding:3px 6px; }
-      @media(max-width:800px){ .concept,.video-grid{grid-template-columns:1fr;} .hero{padding:26px 20px;}
-        .content{padding:16px;} .metric-row{grid-template-columns:1fr;} }
+      code { background:#0c080d; color:#e4c987; padding:3px 6px; }
+      a { color:var(--cyan); }
+      @media(max-width:1050px){ #main_navigation{grid-template-columns:repeat(3,minmax(0,1fr));position:static;} }
+      @media(max-width:800px){ .concept,.video-grid{grid-template-columns:1fr;} .hero{padding:30px 20px;}
+        .content{padding:22px 16px;} .metric-row{grid-template-columns:1fr;}
+        .module-heading{grid-template-columns:1fr;} .module-seal{width:46px;height:46px;} }
+      @media(max-width:560px){ #main_navigation{grid-template-columns:repeat(2,minmax(0,1fr));}
+        #laplace_navigation>li,#differential_navigation>li,#linear_algebra_navigation>li,
+        #reference_navigation>li{flex-basis:100%;} }
     "))
   ),
   div(class = "app-shell",
@@ -320,8 +398,8 @@ ui <- fluidPage(
               "Build exam-ready intuition for differential equations, Laplace transforms, and linear algebra.")
       ),
       div(class = "content",
-          tabsetPanel(type = "tabs",
-            tabPanel("About", value = "app_about",
+          tabsetPanel(id = "main_navigation", type = "tabs",
+            tabPanel("Course Home", value = "app_about",
               div(class = "card",
                 div(class = "eyebrow", "Start here"),
                 h2("Learn the course by exploring it"),
@@ -358,7 +436,7 @@ ui <- fluidPage(
                       tags$li("Predict what a graph or answer will do before changing a control."),
                       tags$li("Use the interactive lab to test your prediction."),
                       tags$li("Practise the matching recurring exam patterns."),
-                      tags$li("Use Exam Coach to rotate between topics and reveal guidance only after attempting a problem.")
+                      tags$li("Use Exam Practice to rotate between topics and reveal guidance only after attempting a problem.")
                     )
                   )
                 ),
@@ -373,9 +451,11 @@ ui <- fluidPage(
                 )
               )
             ),
-            tabPanel("Laplace Transform", value = "laplace",
-              tabsetPanel(type = "pills",
-            tabPanel("About", value = "laplace_about",
+            tabPanel("1 · Laplace", value = "laplace",
+              module_header("I", "Laplace transforms",
+                "Translate time-domain behavior into algebra, then connect the rules to real engineering systems."),
+              tabsetPanel(id = "laplace_navigation", type = "pills",
+            tabPanel("1 · Overview", value = "laplace_about",
               div(class = "card",
                 div(class = "eyebrow", "Start here"),
                 h2("Learn Laplace transforms visually"),
@@ -389,15 +469,15 @@ ui <- fluidPage(
               ),
               div(class = "concept",
                 div(class = "card",
-                  strong("Transform Explorer"),
+                  strong("Transform Lab"),
                   span("Choose an exponential, sine, cosine, polynomial, or damped sine. Change its parameters and compare f(t) with F(s).")
                 ),
                 div(class = "card",
-                  strong("Property Lab"),
+                  strong("Properties Lab"),
                   span("Delay a signal and observe how time shifting becomes multiplication by e^(−as) in the s-domain.")
                 ),
                 div(class = "card",
-                  strong("Quick Reference"),
+                  strong("Formula Library"),
                   span("Review the definition, common transform pairs, and the weight–accumulate–solve interpretation.")
                 )
               ),
@@ -410,7 +490,7 @@ ui <- fluidPage(
                       tags$li("Select exponential decay and change its decay rate."),
                       tags$li("Compare sine waves with low and high frequency."),
                       tags$li("Try the damped sine to combine decay and oscillation."),
-                      tags$li("Use Property Lab to understand time shifting."),
+                      tags$li("Use the Properties Lab to understand time shifting."),
                       tags$li("Predict each graph before moving a slider, then test your prediction.")
                     )
                   )
@@ -427,7 +507,7 @@ ui <- fluidPage(
                 )
               )
             ),
-            tabPanel("Transform Explorer", value = "explorer",
+            tabPanel("2 · Explore: Transforms", value = "explorer",
               fluidRow(
                 column(4,
                   div(class = "card",
@@ -455,7 +535,7 @@ ui <- fluidPage(
                 )
               )
             ),
-            tabPanel("Property Lab", value = "properties",
+            tabPanel("3 · Explore: Properties", value = "properties",
               fluidRow(
                 column(4,
                   div(class = "card",
@@ -482,7 +562,7 @@ ui <- fluidPage(
                 )
               )
             ),
-            tabPanel("Video Lessons", value = "laplace_videos",
+            tabPanel("4 · Watch: Videos", value = "laplace_videos",
               video_lesson_page(
                 "Laplace transform",
                 paste(
@@ -494,9 +574,9 @@ ui <- fluidPage(
                 "https://www.video-tutor.net/video-playlists.html"
               )
             ),
-            tabPanel("Engineering Example", value = "engineering",
-              tabsetPanel(type = "pills",
-                tabPanel("Mechanical · Suspension", value = "mechanical",
+            tabPanel("5 · Apply: Engineering", value = "engineering",
+              tabsetPanel(id = "engineering_navigation", type = "pills",
+                tabPanel("Mechanical: Suspension", value = "mechanical",
               div(class = "card",
                 div(class = "eyebrow", "Real-world application"),
                 h2("Designing a vehicle suspension"),
@@ -641,7 +721,7 @@ ui <- fluidPage(
                 )
               )
                 ),
-                tabPanel("Chemical · Mixing tank", value = "chemical",
+                tabPanel("Chemical: Mixing tank", value = "chemical",
                   div(class = "card",
                     div(class = "eyebrow", "Chemical engineering"),
                     h2("Controlling concentration in a mixing tank"),
@@ -766,7 +846,7 @@ ui <- fluidPage(
                     )
                   )
                 ),
-                tabPanel("Civil · Building vibration", value = "civil",
+                tabPanel("Civil: Building vibration", value = "civil",
                   div(class = "card",
                     div(class = "eyebrow", "Civil engineering"),
                     h2("Limiting building motion under wind"),
@@ -896,9 +976,11 @@ ui <- fluidPage(
             ),
               )
             ),
-            tabPanel("Differential Equations", value = "differential",
-              tabsetPanel(type = "pills",
-                tabPanel("Overview",
+            tabPanel("2 · Differential Equations", value = "differential",
+              module_header("II", "Differential equations",
+                "Classify equations, connect characteristic roots to motion, and interpret coupled systems."),
+              tabsetPanel(id = "differential_navigation", type = "pills",
+                tabPanel("1 · Overview",
                   div(class = "card",
                     div(class = "eyebrow", "Exam domain"),
                     h2("Differential equations"),
@@ -941,7 +1023,7 @@ ui <- fluidPage(
                     )
                   )
                 ),
-                tabPanel("Linear ODE lab",
+                tabPanel("2 · Explore: Linear ODEs",
                   div(class = "card",
                     div(class = "eyebrow", "Interactive method"),
                     h2("Characteristic-root explorer"),
@@ -975,7 +1057,7 @@ ui <- fluidPage(
                     )
                   )
                 ),
-                tabPanel("System phase lab",
+                tabPanel("3 · Explore: Systems",
                   div(class = "card",
                     div(class = "eyebrow", "Coupled equations"),
                     h2("Two-state system explorer"),
@@ -1010,7 +1092,7 @@ ui <- fluidPage(
                     )
                   )
                 ),
-                tabPanel("Video Lessons",
+                tabPanel("4 · Watch: Videos",
                   video_lesson_page(
                     "Differential equations",
                     paste(
@@ -1022,7 +1104,7 @@ ui <- fluidPage(
                     "https://www.video-tutor.net/differential-equations.html"
                   )
                 ),
-                tabPanel("Engineering Example",
+                tabPanel("5 · Apply: Engineering",
                   div(class = "card",
                     div(class = "eyebrow", "Thermal engineering"),
                     h2("Keeping equipment at a safe temperature"),
@@ -1121,9 +1203,11 @@ ui <- fluidPage(
                 )
               )
             ),
-            tabPanel("Linear Algebra", value = "linear_algebra",
-              tabsetPanel(type = "pills",
-                tabPanel("Overview",
+            tabPanel("3 · Linear Algebra", value = "linear_algebra",
+              module_header("III", "Linear algebra",
+                "Move from systems and determinants to eigenvectors, diagonalization, and structural applications."),
+              tabsetPanel(id = "linear_algebra_navigation", type = "pills",
+                tabPanel("1 · Overview",
                   div(class = "card",
                     div(class = "eyebrow", "Highest-weight exam domain"),
                     h2("Linear algebra"),
@@ -1161,7 +1245,7 @@ ui <- fluidPage(
                     )
                   )
                 ),
-                tabPanel("Matrix and system lab",
+                tabPanel("2 · Explore: Systems",
                   div(class = "card",
                     div(class = "eyebrow", "Interactive calculation"),
                     h2("Solve Ax=b and test invertibility"),
@@ -1197,7 +1281,7 @@ ui <- fluidPage(
                     )
                   )
                 ),
-                tabPanel("Eigenvalue lab",
+                tabPanel("3 · Explore: Eigenvalues",
                   div(class = "card",
                     div(class = "eyebrow", "Geometric intuition"),
                     h2("Eigenvectors and diagonalization"),
@@ -1230,7 +1314,7 @@ ui <- fluidPage(
                     )
                   )
                 ),
-                tabPanel("Video Lessons",
+                tabPanel("4 · Watch: Videos",
                   video_lesson_page(
                     "Linear algebra",
                     paste(
@@ -1242,7 +1326,7 @@ ui <- fluidPage(
                     "https://www.video-tutor.net/matrices.html"
                   )
                 ),
-                tabPanel("Engineering Example",
+                tabPanel("5 · Apply: Engineering",
                   div(class = "card",
                     div(class = "eyebrow", "Structural engineering"),
                     h2("Solving forces at a truss joint"),
@@ -1345,7 +1429,7 @@ ui <- fluidPage(
                 )
               )
             ),
-            tabPanel("Exam Coach", value = "exam_coach",
+            tabPanel("Exam Practice", value = "exam_coach",
               div(class = "card",
                 div(class = "eyebrow", "Based on six finals"),
                 h2("2020–2025 exam roadmap"),
@@ -1406,14 +1490,14 @@ ui <- fluidPage(
                 )
               )
             ),
-            tabPanel("Quick Reference", value = "reference",
+            tabPanel("Formula Library", value = "reference",
               div(class = "card",
                 div(class = "eyebrow", "Course formula sheet"),
-                h2("Quick Reference"),
+                h2("Formula library"),
                 tags$p("Use these formulas to identify a method, then verify the conditions before applying it.")
               ),
-              tabsetPanel(type = "pills",
-                tabPanel("Laplace transforms",
+              tabsetPanel(id = "reference_navigation", type = "pills",
+                tabPanel("Laplace",
                   div(class = "card",
                     h3("Definition and core properties"),
                     math_block(
@@ -1450,7 +1534,7 @@ ui <- fluidPage(
                     )
                   )
                 ),
-                tabPanel("Differential equations",
+                tabPanel("Differential Equations",
                   div(class = "card",
                     h3("Constant-coefficient linear equations"),
                     math_block("ay''+by'+cy=g(x)\\quad\\Longrightarrow\\quad ar^2+br+c=0",
@@ -1490,7 +1574,7 @@ ui <- fluidPage(
                       "Negative real parts imply decay; positive real parts imply growth; opposite signs produce a saddle; imaginary parts produce rotation or oscillation.")
                   )
                 ),
-                tabPanel("Linear algebra",
+                tabPanel("Linear Algebra",
                   div(class = "card",
                     h3("Two-by-two essentials"),
                     math_block("A=\\begin{bmatrix}a&b\\\\c&d\\end{bmatrix},\\qquad \\det(A)=ad-bc",
@@ -1538,7 +1622,7 @@ ui <- fluidPage(
                     )
                   )
                 ),
-                tabPanel("Method selector",
+                tabPanel("Method Selector",
                   div(class = "card",
                     h3("What should I try first?"),
                     tags$table(
@@ -1565,6 +1649,16 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
+  plot_bg <- "#171118"
+  plot_axis <- "#baa98f"
+  plot_text <- "#eadfc9"
+  plot_grid <- "#4a3735"
+  plot_gold <- "#d6b567"
+  plot_ruby <- "#a5405d"
+  plot_emerald <- "#4f8c78"
+  plot_muted <- "#85786d"
+  plot_orange <- "#c47d4a"
+
   current <- reactive(signal_catalogue[[input$signal]])
 
   output$parameter_controls <- renderUI({
@@ -1594,7 +1688,7 @@ server <- function(input, output, session) {
   })
 
   dark_plot <- function(xlab, ylab) {
-    par(bg = "#111723", fg = "#94a3b8", col.axis = "#94a3b8", col.lab = "#cbd5e1",
+    par(bg = plot_bg, fg = plot_axis, col.axis = plot_axis, col.lab = plot_text,
         mar = c(4.2, 4.4, 1, 1), family = "sans")
   }
 
@@ -1603,9 +1697,9 @@ server <- function(input, output, session) {
     y <- current()$time(t, params())
     dark_plot()
     plot(t, y, type = "n", xlab = "time  t", ylab = "amplitude")
-    grid(col = "#263246", lty = 1)
-    lines(t, y, col = "#38bdf8", lwd = 3)
-    abline(h = 0, col = "#64748b", lwd = 1)
+    grid(col = plot_grid, lty = 1)
+    lines(t, y, col = plot_gold, lwd = 3)
+    abline(h = 0, col = plot_muted, lwd = 1)
   }, res = 110)
 
   output$laplace_plot <- renderPlot({
@@ -1615,9 +1709,9 @@ server <- function(input, output, session) {
     y <- pmax(pmin(y, cap), -cap)
     dark_plot()
     plot(s, y, type = "n", xlab = "real frequency  s", ylab = "F(s)")
-    grid(col = "#263246", lty = 1)
-    lines(s, y, col = "#a78bfa", lwd = 3)
-    abline(h = 0, col = "#64748b", lwd = 1)
+    grid(col = plot_grid, lty = 1)
+    lines(s, y, col = plot_ruby, lwd = 3)
+    abline(h = 0, col = plot_muted, lwd = 1)
   }, res = 110)
 
   output$shift_plot <- renderPlot({
@@ -1626,12 +1720,12 @@ server <- function(input, output, session) {
     shifted <- ifelse(t >= input$shift, exp(-input$decay * (t - input$shift)), 0)
     dark_plot()
     plot(t, original, type = "n", ylim = c(0, 1.08), xlab = "time  t", ylab = "amplitude")
-    grid(col = "#263246", lty = 1)
-    lines(t, original, col = "#38bdf8", lwd = 3)
-    lines(t, shifted, col = "#34d399", lwd = 3)
-    abline(v = input$shift, col = "#64748b", lty = 3)
-    legend("topright", c("f(t)", "u(t−a)f(t−a)"), col = c("#38bdf8", "#34d399"),
-           lwd = 3, bty = "n", text.col = "#cbd5e1")
+    grid(col = plot_grid, lty = 1)
+    lines(t, original, col = plot_gold, lwd = 3)
+    lines(t, shifted, col = plot_emerald, lwd = 3)
+    abline(v = input$shift, col = plot_muted, lty = 3)
+    legend("topright", c("f(t)", "u(t−a)f(t−a)"), col = c(plot_gold, plot_emerald),
+           lwd = 3, bty = "n", text.col = plot_text)
   }, res = 110)
 
   output$shift_laplace_plot <- renderPlot({
@@ -1640,11 +1734,11 @@ server <- function(input, output, session) {
     shifted <- exp(-input$shift * s) / (s + input$decay)
     dark_plot()
     plot(s, original, type = "n", xlab = "real frequency  s", ylab = "magnitude")
-    grid(col = "#263246", lty = 1)
-    lines(s, original, col = "#38bdf8", lwd = 3)
-    lines(s, shifted, col = "#34d399", lwd = 3)
-    legend("topright", c("F(s)", "e^(−as)F(s)"), col = c("#38bdf8", "#34d399"),
-           lwd = 3, bty = "n", text.col = "#cbd5e1")
+    grid(col = plot_grid, lty = 1)
+    lines(s, original, col = plot_gold, lwd = 3)
+    lines(s, shifted, col = plot_emerald, lwd = 3)
+    legend("topright", c("F(s)", "e^(−as)F(s)"), col = c(plot_gold, plot_emerald),
+           lwd = 3, bty = "n", text.col = plot_text)
   }, res = 110)
 
   load_vehicle_preset <- function(preset) {
@@ -1741,13 +1835,13 @@ server <- function(input, output, session) {
     ymax <- max(d$x, d$xeq) * 1.14
     plot(d$t, d$x * 1000, type = "n", ylim = c(0, ymax * 1000),
          xlab = "time after force is applied (s)", ylab = "displacement (mm)")
-    grid(col = "#263246", lty = 1)
+    grid(col = plot_grid, lty = 1)
     polygon(c(d$t, rev(d$t)), c(d$x * 1000, rep(0, length(d$t))),
-            col = "#38bdf81f", border = NA)
-    lines(d$t, d$x * 1000, col = "#38bdf8", lwd = 3)
-    abline(h = d$xeq * 1000, col = "#a78bfa", lty = 2, lwd = 2)
-    legend("topright", c("Body response", "Final position"), col = c("#38bdf8", "#a78bfa"),
-           lwd = c(3, 2), lty = c(1, 2), bty = "n", text.col = "#cbd5e1")
+            col = adjustcolor(plot_gold, alpha.f = .13), border = NA)
+    lines(d$t, d$x * 1000, col = plot_gold, lwd = 3)
+    abline(h = d$xeq * 1000, col = plot_ruby, lty = 2, lwd = 2)
+    legend("topright", c("Body response", "Final position"), col = c(plot_gold, plot_ruby),
+           lwd = c(3, 2), lty = c(1, 2), bty = "n", text.col = plot_text)
   }, res = 110)
 
   output$frequency_plot <- renderPlot({
@@ -1757,9 +1851,9 @@ server <- function(input, output, session) {
     dark_plot()
     plot(w, magnitude * 1e6, type = "n", log = "x",
          xlab = "angular frequency  ω (rad/s)", ylab = "|H(jω)|  (mm/kN)")
-    grid(col = "#263246", lty = 1)
-    lines(w, magnitude * 1e6, col = "#34d399", lwd = 3)
-    abline(v = suspension_data()$wn, col = "#64748b", lty = 3)
+    grid(col = plot_grid, lty = 1)
+    lines(w, magnitude * 1e6, col = plot_emerald, lwd = 3)
+    abline(v = suspension_data()$wn, col = plot_muted, lty = 3)
   }, res = 110)
 
   tank_data <- reactive({
@@ -1796,16 +1890,16 @@ server <- function(input, output, session) {
     plot(d$t, d$concentration, type = "n",
          ylim = y_range + c(-padding, padding),
          xlab = "time after inlet change (min)", ylab = "relative concentration")
-    grid(col = "#263246", lty = 1)
+    grid(col = plot_grid, lty = 1)
     polygon(c(d$t, rev(d$t)),
             c(d$concentration, rep(min(y_range) - padding, length(d$t))),
-            col = "#34d3991f", border = NA)
-    lines(d$t, d$concentration, col = "#34d399", lwd = 3)
-    abline(h = input$inlet_conc, col = "#a78bfa", lty = 2, lwd = 2)
-    abline(v = d$tau, col = "#64748b", lty = 3)
+            col = adjustcolor(plot_emerald, alpha.f = .13), border = NA)
+    lines(d$t, d$concentration, col = plot_emerald, lwd = 3)
+    abline(h = input$inlet_conc, col = plot_ruby, lty = 2, lwd = 2)
+    abline(v = d$tau, col = plot_muted, lty = 3)
     legend("bottomright", c("Tank concentration", "New inlet value", "One time constant"),
-           col = c("#34d399", "#a78bfa", "#64748b"), lwd = c(3, 2, 1),
-           lty = c(1, 2, 3), bty = "n", text.col = "#cbd5e1")
+           col = c(plot_emerald, plot_ruby, plot_muted), lwd = c(3, 2, 1),
+           lty = c(1, 2, 3), bty = "n", text.col = plot_text)
   }, res = 110)
 
   building_data <- reactive({
@@ -1850,14 +1944,14 @@ server <- function(input, output, session) {
     dark_plot()
     plot(d$t, d$x * 1000, type = "n", ylim = c(0, ymax * 1000),
          xlab = "time after wind begins (s)", ylab = "top displacement (mm)")
-    grid(col = "#263246", lty = 1)
+    grid(col = plot_grid, lty = 1)
     polygon(c(d$t, rev(d$t)), c(d$x * 1000, rep(0, length(d$t))),
-            col = "#a78bfa1f", border = NA)
-    lines(d$t, d$x * 1000, col = "#a78bfa", lwd = 3)
-    abline(h = d$xeq * 1000, col = "#38bdf8", lty = 2, lwd = 2)
+            col = adjustcolor(plot_ruby, alpha.f = .13), border = NA)
+    lines(d$t, d$x * 1000, col = plot_ruby, lwd = 3)
+    abline(h = d$xeq * 1000, col = plot_gold, lty = 2, lwd = 2)
     legend("topright", c("Building response", "Static wind position"),
-           col = c("#a78bfa", "#38bdf8"), lwd = c(3, 2), lty = c(1, 2),
-           bty = "n", text.col = "#cbd5e1")
+           col = c(plot_ruby, plot_gold), lwd = c(3, 2), lty = c(1, 2),
+           bty = "n", text.col = plot_text)
   }, res = 110)
 
   load_thermal_preset <- function(preset) {
@@ -1896,16 +1990,16 @@ server <- function(input, output, session) {
     dark_plot()
     plot(d$t, d$temperature, type = "n", ylim = y_range + c(-padding, padding),
          xlab = "time (min)", ylab = "temperature (°C)")
-    grid(col = "#263246")
+    grid(col = plot_grid)
     polygon(c(d$t, rev(d$t)),
             c(d$temperature, rep(y_range[1] - padding, length(d$t))),
-            col = "#38bdf81f", border = NA)
-    lines(d$t, d$temperature, col = "#38bdf8", lwd = 3)
-    abline(h = d$steady, col = "#a78bfa", lty = 2, lwd = 2)
-    abline(v = d$tau, col = "#64748b", lty = 3)
+            col = adjustcolor(plot_gold, alpha.f = .13), border = NA)
+    lines(d$t, d$temperature, col = plot_gold, lwd = 3)
+    abline(h = d$steady, col = plot_ruby, lty = 2, lwd = 2)
+    abline(v = d$tau, col = plot_muted, lty = 3)
     legend("bottomright", c("Equipment temperature", "Steady temperature", "One time constant"),
-           col = c("#38bdf8", "#a78bfa", "#64748b"), lwd = c(3, 2, 1),
-           lty = c(1, 2, 3), bty = "n", text.col = "#cbd5e1")
+           col = c(plot_gold, plot_ruby, plot_muted), lwd = c(3, 2, 1),
+           lty = c(1, 2, 3), bty = "n", text.col = plot_text)
   }, res = 110)
 
   load_truss_preset <- function(preset) {
@@ -1951,28 +2045,28 @@ server <- function(input, output, session) {
     plot(0, 0, type = "n", xlim = c(-5.5, 5.5), ylim = c(-2.5, 5),
          xlab = "horizontal position", ylab = "vertical position", asp = 1,
          axes = FALSE)
-    grid(col = "#263246")
+    grid(col = plot_grid)
     left_end <- c(-4 * cos(d$left), 4 * sin(d$left))
     right_end <- c(4 * cos(d$right), 4 * sin(d$right))
-    lines(c(0, left_end[1]), c(0, left_end[2]), col = "#38bdf8", lwd = 8)
-    lines(c(0, right_end[1]), c(0, right_end[2]), col = "#a78bfa", lwd = 8)
+    lines(c(0, left_end[1]), c(0, left_end[2]), col = plot_gold, lwd = 8)
+    lines(c(0, right_end[1]), c(0, right_end[2]), col = plot_ruby, lwd = 8)
     points(c(left_end[1], right_end[1]), c(left_end[2], right_end[2]),
-           pch = 24, bg = "#64748b", col = "#cbd5e1", cex = 1.4)
-    points(0, 0, pch = 21, bg = "#34d399", col = "#eef2ff", cex = 1.8)
+           pch = 24, bg = plot_muted, col = plot_text, cex = 1.4)
+    points(0, 0, pch = 21, bg = plot_emerald, col = plot_text, cex = 1.8)
 
     load_scale <- 2 / max(10, sqrt(d$px^2 + d$py^2))
     arrows(0, 0, d$px * load_scale, -d$py * load_scale,
-           length = .12, lwd = 3, col = "#f97316")
-    text(d$px * load_scale, -d$py * load_scale - .25, "Applied load", col = "#eef2ff")
+           length = .12, lwd = 3, col = plot_orange)
+    text(d$px * load_scale, -d$py * load_scale - .25, "Applied load", col = plot_text)
     if (all(is.finite(d$forces))) {
       text(left_end[1] / 2, left_end[2] / 2 + .25,
-           sprintf("%.1f kN", d$forces[1]), col = "#eef2ff")
+           sprintf("%.1f kN", d$forces[1]), col = plot_text)
       text(right_end[1] / 2, right_end[2] / 2 + .25,
-           sprintf("%.1f kN", d$forces[2]), col = "#eef2ff")
+           sprintf("%.1f kN", d$forces[2]), col = plot_text)
     }
     legend("topright", c("Left member", "Right member", "External load"),
-           col = c("#38bdf8", "#a78bfa", "#f97316"), lwd = c(8, 8, 3),
-           bty = "n", text.col = "#cbd5e1")
+           col = c(plot_gold, plot_ruby, plot_orange), lwd = c(8, 8, 3),
+           bty = "n", text.col = plot_text)
   }, res = 110)
 
   ode_data <- reactive({
@@ -2032,9 +2126,9 @@ server <- function(input, output, session) {
     y <- pmax(pmin(d$y, cap), -cap)
     dark_plot()
     plot(d$t, y, type = "n", xlab = "time", ylab = "y(t)")
-    grid(col = "#263246")
-    lines(d$t, y, col = "#38bdf8", lwd = 3)
-    abline(h = 0, col = "#64748b")
+    grid(col = plot_grid)
+    lines(d$t, y, col = plot_gold, lwd = 3)
+    abline(h = 0, col = plot_muted)
   }, res = 110)
 
   system_data <- reactive({
@@ -2065,7 +2159,7 @@ server <- function(input, output, session) {
     dark_plot()
     plot(0, 0, type = "n", xlim = c(-6, 6), ylim = c(-6, 6),
          xlab = "state x", ylab = "state y", asp = 1)
-    grid(col = "#263246")
+    grid(col = plot_grid)
     gx <- seq(-5, 5, by = 2)
     field <- expand.grid(x = gx, y = gx)
     deriv <- t(A %*% t(as.matrix(field)))
@@ -2074,7 +2168,7 @@ server <- function(input, output, session) {
     arrows(field$x, field$y,
            field$x + deriv[, 1] / lens * .55,
            field$y + deriv[, 2] / lens * .55,
-           length = .06, col = "#64748b")
+           length = .06, col = plot_muted)
 
     starts <- rbind(c(4, 0), c(-4, 0), c(0, 4), c(0, -4),
                     c(3, 3), c(-3, 3), c(3, -3), c(-3, -3))
@@ -2091,9 +2185,9 @@ server <- function(input, output, session) {
         path <- rbind(path, u)
         if (any(abs(u) > 8)) break
       }
-      lines(path[, 1], path[, 2], col = if (j %% 2) "#38bdf8" else "#a78bfa", lwd = 2)
+      lines(path[, 1], path[, 2], col = if (j %% 2) plot_gold else plot_ruby, lwd = 2)
     }
-    points(0, 0, pch = 16, col = "#34d399", cex = 1.2)
+    points(0, 0, pch = 16, col = plot_emerald, cex = 1.2)
   }, res = 110)
 
   matrix_data <- reactive({
@@ -2125,7 +2219,7 @@ server <- function(input, output, session) {
     dark_plot()
     plot(0, 0, type = "n", xlim = c(-10, 10), ylim = c(-10, 10),
          xlab = "x", ylab = "y", asp = 1)
-    grid(col = "#263246")
+    grid(col = plot_grid)
     draw_equation <- function(coef, value, color) {
       if (abs(coef[2]) > 1e-9) {
         x <- c(-10, 10)
@@ -2134,12 +2228,12 @@ server <- function(input, output, session) {
         abline(v = value / coef[1], col = color, lwd = 3)
       }
     }
-    draw_equation(d$A[1, ], d$rhs[1], "#38bdf8")
-    draw_equation(d$A[2, ], d$rhs[2], "#a78bfa")
+    draw_equation(d$A[1, ], d$rhs[1], plot_gold)
+    draw_equation(d$A[2, ], d$rhs[2], plot_ruby)
     if (all(is.finite(d$solution)) && all(abs(d$solution) <= 10))
-      points(d$solution[1], d$solution[2], pch = 16, cex = 1.5, col = "#34d399")
-    legend("topright", c("Equation 1", "Equation 2"), col = c("#38bdf8", "#a78bfa"),
-           lwd = 3, bty = "n", text.col = "#cbd5e1")
+      points(d$solution[1], d$solution[2], pch = 16, cex = 1.5, col = plot_emerald)
+    legend("topright", c("Equation 1", "Equation 2"), col = c(plot_gold, plot_ruby),
+           lwd = 3, bty = "n", text.col = plot_text)
   }, res = 110)
 
   eigen_data <- reactive({
@@ -2163,17 +2257,17 @@ server <- function(input, output, session) {
     dark_plot()
     plot(0, 0, type = "n", xlim = c(-2, 2), ylim = c(-2, 2),
          xlab = "x₁", ylab = "x₂", asp = 1)
-    grid(col = "#263246")
+    grid(col = plot_grid)
     theta <- seq(0, 2 * pi, length.out = 300)
-    lines(cos(theta), sin(theta), col = "#64748b")
-    colors <- c("#38bdf8", "#a78bfa")
+    lines(cos(theta), sin(theta), col = plot_muted)
+    colors <- c(plot_gold, plot_ruby)
     for (i in 1:2) {
       v <- d$vectors[, i]
       arrows(-v[1], -v[2], v[1], v[2], length = .1, lwd = 4, col = colors[i])
-      text(1.3 * v[1], 1.3 * v[2], labels = paste0("v", i), col = "#eef2ff")
+      text(1.3 * v[1], 1.3 * v[2], labels = paste0("v", i), col = plot_text)
     }
     legend("topright", sprintf("λ%d = %.2f", 1:2, d$values),
-           col = colors, lwd = 4, bty = "n", text.col = "#cbd5e1")
+           col = colors, lwd = 4, bty = "n", text.col = plot_text)
   }, res = 110)
 
   practice_bank <- list(
