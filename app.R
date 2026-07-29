@@ -229,6 +229,195 @@ linear_algebra_videos <- list(
        url = "https://www.youtube.com/watch?v=ieWyx2mlZyk")
 )
 
+source_prompt_story <- list(
+  list(
+    phase = "01 · Foundation", title = "Build the first Laplace lab",
+    prompts = c(
+      "Build me a simple and straightforward app based on Shiny and R scripts that explores Laplace transforms with neat dynamic graphs and interactive elements. Make sure it is in dark mode.",
+      "Please open it for me under localhost."
+    ),
+    outcome = "Created a self-contained Shiny app with reactive signal controls, time-domain and s-domain plots, transform pairs, and a shifting-property experiment."
+  ),
+  list(
+    phase = "02 · Learning design", title = "Explain how the app teaches",
+    prompts = c(
+      "Tell me how this app helps me learn Laplace.",
+      "Add this introduction into the app and make an About page that acts as the home page."
+    ),
+    outcome = "Added a learner-first home page, a recommended path through the labs, and explanations that connect each interaction to a mathematical idea."
+  ),
+  list(
+    phase = "03 · Mechanical engineering", title = "Turn theory into a suspension model",
+    prompts = c(
+      "What is an interesting real-life application of the Laplace transform in engineering? Make an interactive page that explores such an example.",
+      "Add approximate suspension design specifics for a Subaru Outback, Ford F-150, and Honda CR-V."
+    ),
+    outcome = "Built an interactive mass–spring–damper suspension model with vehicle presets, displacement and frequency-response plots, damping metrics, and educational design caveats."
+  ),
+  list(
+    phase = "04 · Plain-language guidance", title = "Make technical terms approachable",
+    prompts = c(
+      "Add a hidden description sign beside “Frequency response of the suspension” with an explain-like-I’m-five description. Look for other technical definitions and do the same.",
+      "Label vehicle mass, spring stiffness, damping c, and sudden road force. Add an instruction manual explaining what to look for when designing a suspension.",
+      "Move the Suspension Design Field Guide section to the top."
+    ),
+    outcome = "Added keyboard-accessible hover definitions, plain-language labels, and a prominent suspension field guide explaining comfort, settling, resonance, and the effect of low damping."
+  ),
+  list(
+    phase = "05 · More disciplines", title = "Expand the engineering examples",
+    prompts = c(
+      "Turn the current engineering example into a subpage and let the user select examples from different disciplines. Add one chemical-engineering example and one civil-engineering example.",
+      "Have the other subpages mimic the first one: add a design guide and three real-life specifics for each."
+    ),
+    outcome = "Added chemical mixing-tank and civil building-vibration labs, each with interactive controls, a design guide, three realistic presets, and model limitations."
+  ),
+  list(
+    phase = "06 · Exam analysis", title = "Grow from one topic into a course app",
+    prompts = c(
+      "I have previous final exams and Laplace transforms are only one of the concepts I need to learn. Analyze the problems and make the ultimate app for mastering the final exam.",
+      "Make sure the new concept pages follow the same format as the Laplace page."
+    ),
+    outcome = "Analyzed the supplied 2020–2025 finals and expanded the app with differential-equation and linear-algebra modules that mirror the same overview, exploration, application, and review structure."
+  ),
+  list(
+    phase = "07 · Information architecture", title = "Restructure the course navigation",
+    prompts = c(
+      "Wrap the Laplace Transform Lab into a subpage alongside About, Transform Explorer, Property Lab, and Engineering Example.",
+      "Make a new About page that explains the intention and purpose of this app."
+    ),
+    outcome = "Introduced a course-level home page and nested topic modules so the app could scale without flattening every activity into one navigation bar."
+  ),
+  list(
+    phase = "08 · Formula presentation", title = "Create a readable formula library",
+    prompts = c(
+      "Refresh the quick-reference page with key formulas from the newly added topics.",
+      "For the formulas, add an easy-to-read traditional-style picture for each of them.",
+      "Make sure all formulas use an easy-to-read traditional style."
+    ),
+    outcome = "Created a multi-topic Formula Library and rendered mathematical notation consistently with MathJax in traditional textbook form."
+  ),
+  list(
+    phase = "09 · Applied mathematics", title = "Add engineering labs to every core topic",
+    prompts = c(
+      "The differential-equations and linear-algebra pages lack an Engineering Example subpage. Add similar interactive example pages for the newly added topics."
+    ),
+    outcome = "Added a thermal-response lab for differential equations and a truss-force lab for linear algebra, including presets, plots, design interpretation, and real-world context."
+  ),
+  list(
+    phase = "10 · Guided practice", title = "Build an exam coach",
+    prompts = c(
+      "For the Show Solution Guide function, infuse it with the prompt “solve this problem step by step” and display the answer."
+    ),
+    outcome = "Built a topic-and-difficulty practice generator with staged solution reasoning, final answers, and an exam-frequency roadmap based on the supplied papers."
+  ),
+  list(
+    phase = "11 · Publishing", title = "Make the project shareable",
+    prompts = c(
+      "Upload this app to my GitHub repository and give me the link.",
+      "I connected my GitHub repository to Posit Cloud. Can you look into it?",
+      "Show me a public link that I can share."
+    ),
+    outcome = "Published the source to GitHub, connected the main branch to Posit Connect Cloud, and established the public URL used for every later release."
+  ),
+  list(
+    phase = "12 · Video curriculum", title = "Match lessons to concepts",
+    prompts = c(
+      "For each core concept, add a subpage containing relevant videos from the Organic Chemistry Tutor’s playlist.",
+      "I only want an exact video-link match to the concept. If there is none, find a helpful YouTube tutorial from another channel."
+    ),
+    outcome = "Added direct concept-matched video libraries, prioritizing Organic Chemistry Tutor and filling genuine gaps with carefully selected lessons from other established educators."
+  ),
+  list(
+    phase = "13 · Navigation and visual system", title = "Make the hierarchy intuitive",
+    prompts = c(
+      "The main pages, their subpages, and their navigation components seem messy. Make them more intuitive while using a Baroque colour scheme."
+    ),
+    outcome = "Standardized every module into Overview → Explore → Watch → Apply, separated primary and secondary navigation, and introduced the decorative visual system that later evolved into the current themes."
+  ),
+  list(
+    phase = "14 · Interface modes", title = "Create Dark Mode and Bright Mode",
+    prompts = c(
+      "Using the same UI arrangement, add a legacy mode that looks like an early Internet Explorer website and add a top-right mode switch.",
+      "Turn the modern UI into true Dark Mode and rename the legacy UI Bright Mode.",
+      "Dark Mode should use a black-and-blue colour scheme, not gold."
+    ),
+    outcome = "Created a switchable black-and-blue Dark Mode and a bright classic-Windows interface with faux Internet Explorer chrome, while preserving the same pages, controls, and navigation state."
+  )
+)
+
+source_prompts_page <- function() {
+  div(
+    class = "source-prompts-page",
+    div(
+      class = "card prompt-intro",
+      div(class = "eyebrow", "Build history · curated transcript"),
+      h2("Source prompts"),
+      tags$p(
+        "A readable reconstruction of the prompts that shaped this app—from the first Laplace graph ",
+        "to the exam coach, engineering labs, publishing workflow, video curriculum, and interface modes."
+      ),
+      div(
+        class = "prompt-note",
+        strong("Reading note"),
+        span(
+          "The supplied 3.5 MB export was cleaned for presentation. Environment dumps, tool calls, ",
+          "token counters, repeated status messages, and encrypted-reasoning placeholders are intentionally omitted. ",
+          "The user prompts and resulting product decisions are preserved."
+        )
+      ),
+      div(
+        class = "prompt-stats",
+        div(strong("14"), span("build milestones")),
+        div(strong("33"), span("source requests reviewed")),
+        div(strong("2020–2025"), span("finals represented"))
+      )
+    ),
+    div(
+      class = "chat-window",
+      div(
+        class = "chat-window-bar",
+        div(class = "chat-window-mark", "◎"),
+        div(
+          strong("How FinalPrep Interactive was made"),
+          span("A prompt-to-product conversation")
+        ),
+        div(class = "chat-window-status", "Published")
+      ),
+      div(
+        class = "chat-thread",
+        lapply(source_prompt_story, function(item) {
+          tagList(
+            div(class = "prompt-phase", item$phase, " · ", item$title),
+            div(
+              class = "chat-message user-message",
+              div(class = "chat-avatar user-avatar", "U"),
+              div(
+                class = "chat-message-content",
+                div(class = "chat-role", "You"),
+                lapply(item$prompts, tags$p)
+              )
+            ),
+            div(
+              class = "chat-message assistant-message",
+              div(class = "chat-avatar assistant-avatar", "C"),
+              div(
+                class = "chat-message-content",
+                div(class = "chat-role", "Codex · build outcome"),
+                tags$p(item$outcome)
+              )
+            )
+          )
+        })
+      ),
+      div(
+        class = "chat-composer",
+        span("This transcript documents the finished build."),
+        span(class = "composer-button", "✓")
+      )
+    )
+  )
+}
+
 ui <- fluidPage(
   tags$head(
     tags$meta(name = "viewport", content = "width=device-width, initial-scale=1"),
@@ -261,7 +450,7 @@ ui <- fluidPage(
       .subtitle { color:var(--muted); max-width:700px; font-size:16px; }
       .content { max-width:1240px; margin:auto; padding:30px 24px 40px; }
       #main_navigation { position:sticky; top:10px; z-index:70; display:grid;
-        grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px; float:none; padding:9px;
+        grid-template-columns:repeat(7,minmax(0,1fr)); gap:8px; float:none; padding:9px;
         margin:0 0 26px; border:1px solid rgba(77,163,255,.42); border-radius:15px;
         background:rgba(16,10,16,.93); box-shadow:0 14px 34px rgba(0,0,0,.38);
         backdrop-filter:blur(18px); }
@@ -389,6 +578,51 @@ ui <- fluidPage(
       .theme-toggle:hover,.theme-toggle:focus { color:#020a12; background:var(--gold-soft);
         outline:2px solid rgba(185,220,255,.28); outline-offset:2px; }
       .legacy-browser-chrome { display:none; }
+      .source-prompts-page { max-width:1100px; margin:0 auto; }
+      .prompt-intro { overflow:hidden; }
+      .prompt-note { display:grid; gap:5px; margin:18px 0; padding:14px 16px;
+        color:#c9ddf0; background:#071b2d; border:1px solid rgba(77,163,255,.38);
+        border-left:4px solid var(--cyan); border-radius:9px; line-height:1.55; }
+      .prompt-note strong { color:#eef6ff; }
+      .prompt-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+        gap:12px; margin-top:18px; }
+      .prompt-stats>div { padding:15px 16px; background:#04080d;
+        border:1px solid var(--border); border-radius:10px; }
+      .prompt-stats strong { display:block; color:var(--cyan); font-family:Georgia,serif;
+        font-size:24px; line-height:1.1; }
+      .prompt-stats span { display:block; margin-top:5px; color:var(--muted); font-size:12px; }
+      .chat-window { overflow:hidden; background:#05080c; border:1px solid #234563;
+        border-radius:15px; box-shadow:0 20px 50px rgba(0,0,0,.48); }
+      .chat-window-bar { display:grid; grid-template-columns:auto 1fr auto; gap:12px;
+        align-items:center; padding:14px 18px; color:#edf6ff; background:#0b1119;
+        border-bottom:1px solid #1f3d5c; }
+      .chat-window-mark { width:34px; height:34px; display:flex; align-items:center;
+        justify-content:center; color:#fff; background:#15558e; border:1px solid #4da3ff;
+        border-radius:50%; font-size:20px; }
+      .chat-window-bar strong,.chat-window-bar span { display:block; }
+      .chat-window-bar span { color:var(--muted); font-size:12px; }
+      .chat-window-status { padding:5px 9px; color:#9ed1ff!important;
+        background:#0b2945; border:1px solid #245f92; border-radius:999px; }
+      .prompt-phase { padding:10px 24px; color:#7fc0ff; background:#06101a;
+        border-bottom:1px solid #16324a; text-transform:uppercase; letter-spacing:.1em;
+        font-size:10px; font-weight:800; }
+      .chat-message { display:grid; grid-template-columns:42px minmax(0,1fr); gap:14px;
+        padding:20px 24px; border-bottom:1px solid #162b3e; }
+      .user-message { background:#0b1621; }
+      .assistant-message { background:#05080c; }
+      .chat-avatar { width:36px; height:36px; display:flex; align-items:center;
+        justify-content:center; border-radius:50%; color:#fff; font-size:12px; font-weight:800; }
+      .user-avatar { background:#15558e; border:1px solid #4da3ff; }
+      .assistant-avatar { color:#c9ebff; background:#16344f; border:1px solid #2e709f; }
+      .chat-role { margin:1px 0 8px; color:#edf6ff; font-weight:750; }
+      .chat-message-content p { margin:0; color:#cbdced; line-height:1.65; }
+      .chat-message-content p+p { margin-top:11px; }
+      .chat-composer { display:flex; align-items:center; justify-content:space-between;
+        gap:12px; margin:18px; padding:12px 14px; color:#8097aa; background:#070d13;
+        border:1px solid #29465f; border-radius:12px; font-size:13px; }
+      .composer-button { width:28px; height:28px; display:flex; align-items:center;
+        justify-content:center; flex:0 0 auto; color:#02101c; background:#4da3ff;
+        border-radius:50%; font-weight:900; }
 
       /* True dark mode: near-black structure with layered blue accents. */
       body:not(.legacy-mode) {
@@ -576,12 +810,43 @@ ui <- fluidPage(
       .legacy-mode code { color:#000; background:#ffffe1; border:1px solid #808080; }
       .legacy-mode a,.legacy-mode .source-link { color:#0000ee; text-decoration:underline; }
       .legacy-mode .plot-wrap { background:#fff; }
+      .legacy-mode .prompt-note { color:#000; background:#ffffe1; border:2px inset #fff;
+        border-left:5px solid #000080; border-radius:0; }
+      .legacy-mode .prompt-note strong { color:#000080; }
+      .legacy-mode .prompt-stats>div { color:#000; background:#fff; border:2px inset #fff;
+        border-radius:0; }
+      .legacy-mode .prompt-stats strong { color:#000080; }
+      .legacy-mode .prompt-stats span { color:#444; }
+      .legacy-mode .chat-window { color:#000; background:#fff; border:2px inset #fff;
+        border-radius:0; box-shadow:none; }
+      .legacy-mode .chat-window-bar { color:#000; background:#c0c0c0;
+        border-bottom:2px groove #fff; font-family:Arial,sans-serif; }
+      .legacy-mode .chat-window-bar span { color:#333; }
+      .legacy-mode .chat-window-mark,.legacy-mode .chat-avatar {
+        border:2px outset #fff; border-radius:0; }
+      .legacy-mode .chat-window-mark,.legacy-mode .user-avatar { background:#000080; }
+      .legacy-mode .assistant-avatar { color:#fff; background:#008080; }
+      .legacy-mode .chat-window-status { color:#000!important; background:#c0c0c0;
+        border:2px outset #fff; border-radius:0; }
+      .legacy-mode .prompt-phase { color:#000080; background:#ffffe1;
+        border-bottom:1px solid #808080; font-family:Arial,sans-serif; }
+      .legacy-mode .chat-message { border-bottom:1px solid #808080; }
+      .legacy-mode .user-message { background:#eef4ff; }
+      .legacy-mode .assistant-message { background:#fff; }
+      .legacy-mode .chat-role { color:#000080; }
+      .legacy-mode .chat-message-content p { color:#000; }
+      .legacy-mode .chat-composer { color:#444; background:#fff; border:2px inset #fff;
+        border-radius:0; }
+      .legacy-mode .composer-button { color:#fff; background:#000080; border-radius:0; }
       @media(max-width:1050px){ #main_navigation{grid-template-columns:repeat(3,minmax(0,1fr));position:static;} }
       @media(max-width:800px){ .concept,.video-grid{grid-template-columns:1fr;} .hero{padding:30px 20px;}
         .content{padding:22px 16px;} .metric-row{grid-template-columns:1fr;}
         .module-heading{grid-template-columns:1fr;} .module-seal{width:46px;height:46px;}
         .theme-toggle{position:static;margin-top:16px;} .legacy-mode h1{max-width:none;}
-        .legacy-mode .theme-toggle{position:static;} }
+        .legacy-mode .theme-toggle{position:static;} .prompt-stats{grid-template-columns:1fr;}
+        .chat-message{grid-template-columns:34px minmax(0,1fr);padding:16px 14px;}
+        .chat-window-bar{grid-template-columns:auto 1fr;}.chat-window-status{display:none;}
+        .prompt-phase{padding:9px 14px;} }
       @media(max-width:560px){ #main_navigation{grid-template-columns:repeat(2,minmax(0,1fr));}
         #laplace_navigation>li,#differential_navigation>li,#linear_algebra_navigation>li,
         #reference_navigation>li{flex-basis:100%;}
@@ -1901,6 +2166,11 @@ ui <- fluidPage(
                   )
                 )
               )
+            ),
+            tabPanel(
+              "Source Prompts",
+              value = "source_prompts",
+              source_prompts_page()
             )
           )
       )
