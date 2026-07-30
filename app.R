@@ -229,8 +229,118 @@ linear_algebra_videos <- list(
        url = "https://www.youtube.com/watch?v=ieWyx2mlZyk")
 )
 
+catalog_tutorial_match <- function(title) {
+  if (title %in% c(
+    "Constant-coefficient initial-value problem",
+    "Cauchy-Euler equation with complex roots",
+    "Forced oscillator at resonance",
+    "Repeated operator with matching forcing"
+  )) {
+    return(list(
+      video = differential_videos[[4]],
+      reason = "Refresh characteristic roots, complementary solutions, and the trial-solution workflow for second-order linear equations."
+    ))
+  }
+  if (title %in% c(
+    "Reduce the order of a nonlinear equation",
+    "Nonlinear equation missing the dependent variable"
+  )) {
+    return(list(
+      video = differential_videos[[2]],
+      reason = "After reducing the order, the remaining first-order equation is solved by separating variables—the central method in this lesson."
+    ))
+  }
+  if (title %in% c(
+    "Classify a planar equilibrium",
+    "Eigenvalue classification of a flow"
+  )) {
+    return(list(
+      video = differential_videos[[5]],
+      reason = "Review how eigenvalues determine stability and the node, saddle, spiral, or center seen in a phase portrait."
+    ))
+  }
+  if (title %in% c(
+    "Inverse transform by completing the square",
+    "Recognize a frequency shift"
+  )) {
+    return(list(
+      video = laplace_videos[[2]],
+      reason = "Refresh the pattern-matching and algebra used to decompose a transform before returning to the time domain."
+    ))
+  }
+  if (title %in% c(
+    "Delayed forcing in an initial-value problem",
+    "Invert a delayed damped signal"
+  )) {
+    return(list(
+      video = laplace_videos[[4]],
+      reason = "Review unit-step notation and the second-shifting theorem used to move a signal or forcing input in time."
+    ))
+  }
+  if (title %in% c(
+    "Solve a convolution integral equation",
+    "Integral equation with an exponential kernel"
+  )) {
+    return(list(
+      video = laplace_videos[[6]],
+      reason = "Refresh how a convolution integral becomes a product of transforms and how that simplifies an integral equation."
+    ))
+  }
+  if (title == "Differentiate a transform") {
+    return(list(
+      video = laplace_videos[[1]],
+      reason = "Revisit the time-domain versus s-domain viewpoint before applying the property that multiplication by time differentiates the transform."
+    ))
+  }
+  if (title %in% c(
+    "Impulse-driven oscillator",
+    "Zero-state response to a delayed impulse"
+  )) {
+    return(list(
+      video = laplace_videos[[5]],
+      reason = "Review the transform of a delayed Dirac impulse and how it produces the shifted response of a differential equation."
+    ))
+  }
+  if (title == "Inverse transform and convolution structure") {
+    return(list(
+      video = laplace_videos[[2]],
+      reason = "Refresh partial-fraction decomposition, the most direct route for inverting this rational transform."
+    ))
+  }
+  if (title %in% c(
+    "Classify a parameterized linear system",
+    "Consistency and a determinant identity"
+  )) {
+    return(list(
+      video = linear_algebra_videos[[2]],
+      reason = "Review pivots and row-echelon form to distinguish unique, inconsistent, and infinitely many solution cases."
+    ))
+  }
+  if (title == "Simplify a determinant expression") {
+    return(list(
+      video = linear_algebra_videos[[4]],
+      reason = "Refresh determinant calculations before applying the product, transpose, inverse, and power identities."
+    ))
+  }
+  if (title %in% c(
+    "Diagonalize a matrix and express its powers",
+    "Use symmetry to compute a matrix power",
+    "Principal square root of a symmetric matrix",
+    "A matrix function from spectral data"
+  )) {
+    return(list(
+      video = linear_algebra_videos[[6]],
+      reason = "Review how eigenvectors form P, eigenvalues form D, and matrix powers or roots are computed through the diagonal matrix."
+    ))
+  }
+  stop("No tutorial catalog match for mock-exam question: ", title)
+}
+
 mock_question <- function(topic, title, prompt, steps, answer) {
-  list(topic = topic, title = title, prompt = prompt, steps = steps, answer = answer)
+  list(
+    topic = topic, title = title, prompt = prompt, steps = steps, answer = answer,
+    tutorial = catalog_tutorial_match(title)
+  )
 }
 
 # Five newly written practice finals modeled on the recurring skills in the
@@ -545,6 +655,8 @@ mock_exam_bank <- list(
 )
 
 mock_exam_question_ui <- function(question, number) {
+  tutorial <- question$tutorial
+  video <- tutorial$video
   div(
     class = "mock-question",
     div(
@@ -557,6 +669,20 @@ mock_exam_question_ui <- function(question, number) {
     ),
     h3(question$title),
     math_block(question$prompt, paste("Mock exam question", number)),
+    div(
+      class = "mock-video-match",
+      div(
+        class = "mock-video-copy",
+        div(class = "eyebrow", "Tutorial refresh · best catalog match"),
+        strong(paste(video$creator, "·", video$title)),
+        tags$p(tutorial$reason)
+      ),
+      tags$a(
+        class = "btn video-link mock-video-link",
+        href = video$url, target = "_blank", rel = "noopener noreferrer",
+        "Watch matching tutorial ↗"
+      )
+    ),
     tags$details(
       class = "solution-disclosure",
       tags$summary("Reveal step-by-step solution hint"),
@@ -692,9 +818,10 @@ source_prompt_story <- list(
     phase = "15 · Exam simulation", title = "Generate five full practice finals",
     prompts = c(
       "Under the Exam Practice page, make a subpage called Mockup Exam with five predicted versions. Put a step-by-step solution hint under every question, hidden until the user clicks.",
-      "I only see Version 1."
+      "I only see Version 1.",
+      "For all mock-exam versions, match each question to a relevant tutorial video from the catalog so the user can easily refresh their knowledge."
     ),
-    outcome = "Added five newly written 100-mark mock exams modeled on recurring 2020–2025 patterns, with 25 questions and a native click-to-reveal solution guide beneath every problem. Replaced the compact dropdown with five always-visible version buttons."
+    outcome = "Added five newly written 100-mark mock exams modeled on recurring 2020–2025 patterns, with 25 questions and a native click-to-reveal solution guide beneath every problem. Replaced the compact dropdown with five always-visible version buttons and matched every question to its closest lesson in the app's tutorial catalog."
   )
 )
 
@@ -721,7 +848,7 @@ source_prompts_page <- function() {
       div(
         class = "prompt-stats",
         div(strong("15"), span("build milestones")),
-        div(strong("35"), span("source requests reviewed")),
+        div(strong("36"), span("source requests reviewed")),
         div(strong("2020–2025"), span("finals represented"))
       )
     ),
@@ -974,6 +1101,12 @@ ui <- fluidPage(
       .mock-question-topic { display:block; margin-top:4px; color:var(--muted); font-size:12px; }
       .mock-question h3 { margin:0 0 13px; color:#eef6ff; font-size:19px; }
       .mock-question>.formula { margin-bottom:16px; }
+      .mock-video-match { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:16px;
+        align-items:center; margin:0 0 16px; padding:14px 15px; background:#071524;
+        border:1px solid #244d70; border-radius:10px; }
+      .mock-video-copy strong { display:block; margin:4px 0 5px; color:#e9f4ff; }
+      .mock-video-copy p { margin:0; color:#adc3d7; font-size:13px; line-height:1.55; }
+      .mock-video-link { flex:0 0 auto; margin:0; white-space:nowrap; }
       .solution-disclosure { overflow:hidden; border:1px solid #29465f; border-radius:10px;
         background:#050a0f; }
       .solution-disclosure summary { padding:12px 14px; color:#b9dcff; cursor:pointer;
@@ -1246,6 +1379,9 @@ ui <- fluidPage(
       .legacy-mode .mock-question::before { display:none; }
       .legacy-mode .mock-question-number,.legacy-mode .mock-question h3 { color:#000080; }
       .legacy-mode .mock-question-topic { color:#444; }
+      .legacy-mode .mock-video-match { color:#000; background:#ffffe1;
+        border:2px inset #fff; border-radius:0; }
+      .legacy-mode .mock-video-copy strong,.legacy-mode .mock-video-copy p { color:#000; }
       .legacy-mode .solution-disclosure { background:#fff; border:2px inset #fff; border-radius:0; }
       .legacy-mode .solution-disclosure summary { color:#000080; background:#c0c0c0;
         font-family:Arial,sans-serif; }
@@ -1290,6 +1426,7 @@ ui <- fluidPage(
         .legacy-mode .theme-toggle{position:static;} .prompt-stats{grid-template-columns:1fr;}
         .mock-version-picker .shiny-options-group{grid-template-columns:repeat(3,minmax(0,1fr));}
         .mock-exam-banner{grid-template-columns:1fr;}.mock-exam-balance{justify-content:flex-start;max-width:none;}
+        .mock-video-match{grid-template-columns:1fr;}.mock-video-link{justify-self:start;}
         .mock-question-heading{align-items:flex-start;}.mock-question{padding:17px 15px;}
         .chat-message{grid-template-columns:34px minmax(0,1fr);padding:16px 14px;}
         .chat-window-bar{grid-template-columns:auto 1fr;}.chat-window-status{display:none;}
