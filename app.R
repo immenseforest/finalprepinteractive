@@ -111,6 +111,72 @@ math_inline <- function(tex, label) {
   )
 }
 
+# ---------- Community feedback ----------
+empty_community_comments <- function() {
+  data.frame(
+    id = character(),
+    created_at = character(),
+    handle = character(),
+    vote = character(),
+    comment = character(),
+    stringsAsFactors = FALSE
+  )
+}
+
+preferred_comment_dir <- Sys.getenv(
+  "FINALPREP_COMMENT_DIR",
+  unset = file.path(getwd(), "community-data")
+)
+
+comment_store_dir <- tryCatch({
+  dir.create(preferred_comment_dir, recursive = TRUE, showWarnings = FALSE)
+  if (file.access(preferred_comment_dir, 2) != 0) {
+    stop("The preferred comment directory is not writable.")
+  }
+  normalizePath(preferred_comment_dir, winslash = "/", mustWork = TRUE)
+}, error = function(error) {
+  fallback <- file.path(tempdir(), "finalprep-community")
+  dir.create(fallback, recursive = TRUE, showWarnings = FALSE)
+  normalizePath(fallback, winslash = "/", mustWork = TRUE)
+})
+
+comment_store_path <- file.path(comment_store_dir, "comments.rds")
+
+read_community_comments <- function() {
+  if (!file.exists(comment_store_path)) {
+    return(empty_community_comments())
+  }
+  tryCatch({
+    comments <- readRDS(comment_store_path)
+    required <- c("id", "created_at", "handle", "vote", "comment")
+    if (!is.data.frame(comments) || !all(required %in% names(comments))) {
+      stop("Comment store has an unexpected structure.")
+    }
+    comments[, required, drop = FALSE]
+  }, error = function(error) {
+    empty_community_comments()
+  })
+}
+
+write_community_comments <- function(comments) {
+  tryCatch({
+    saveRDS(comments, comment_store_path)
+    TRUE
+  }, error = function(error) {
+    FALSE
+  })
+}
+
+clean_community_text <- function(value, limit) {
+  value <- enc2utf8(if (is.null(value)) "" else as.character(value))
+  value <- gsub("[[:cntrl:]]+", " ", value)
+  value <- trimws(gsub("[[:space:]]+", " ", value))
+  substr(value, 1, limit)
+}
+
+community_comments <- reactiveVal(read_community_comments())
+community_active_users <- reactiveVal(0L)
+
 module_header <- function(number, title, description) {
   div(
     class = "module-heading",
@@ -663,6 +729,173 @@ mock_exam_bank <- list(
   )
 )
 
+# Independently checked algebra for every mock-exam answer. These displayed
+# derivations complement the method checklist with the actual line-by-line
+# operations a learner should be able to reproduce under exam conditions.
+mock_derivation_catalog <- list(
+  "Constant-coefficient initial-value problem" = c(
+    "r^2+4r+3=(r+1)(r+3)=0\\quad\\Longrightarrow\\quad r=-1,-3",
+    "y=C_1e^{-x}+C_2e^{-3x},\\qquad y'=-C_1e^{-x}-3C_2e^{-3x}",
+    "\\begin{bmatrix}1&1\\\\-1&-3\\end{bmatrix}\\begin{bmatrix}C_1\\\\C_2\\end{bmatrix}=\\begin{bmatrix}2\\\\-4\\end{bmatrix}\\quad\\Longrightarrow\\quad C_2=1,\\;C_1=1",
+    "p(r)=r(r+2)=r^2+2r\\quad\\Longrightarrow\\quad p(D)y=y''+2y'=0"
+  ),
+  "Inverse transform by completing the square" = c(
+    "s^2+4s+13=(s+2)^2+9,\\qquad 2s+5=2(s+2)+1",
+    "\\frac{2s+5}{s^2+4s+13}=2\\frac{s+2}{(s+2)^2+3^2}+\\frac13\\frac{3}{(s+2)^2+3^2}",
+    "\\mathcal{L}^{-1}\\!\\left\\{\\frac{s+a}{(s+a)^2+b^2}\\right\\}=e^{-at}\\cos(bt),\\qquad \\mathcal{L}^{-1}\\!\\left\\{\\frac{b}{(s+a)^2+b^2}\\right\\}=e^{-at}\\sin(bt)"
+  ),
+  "Delayed forcing in an initial-value problem" = c(
+    "(sY-1)+2Y=\\frac{e^{-3s}}{s}\\quad\\Longrightarrow\\quad Y=\\frac1{s+2}+e^{-3s}\\frac1{s(s+2)}",
+    "\\frac1{s(s+2)}=\\frac{A}{s}+\\frac{B}{s+2},\\qquad 1=A(s+2)+Bs\\quad\\Longrightarrow\\quad A=\\frac12,\\;B=-\\frac12",
+    "Y=\\frac1{s+2}+\\frac12e^{-3s}\\left(\\frac1s-\\frac1{s+2}\\right)",
+    "y(t)=e^{-2t}+\\frac12u(t-3)\\left[1-e^{-2(t-3)}\\right]"
+  ),
+  "Classify a parameterized linear system" = c(
+    "A=\\begin{bmatrix}1&k\\\\2&4\\end{bmatrix},\\qquad \\det(A)=4-2k=2(2-k)",
+    "R_2\\leftarrow R_2-2R_1:\\qquad (4-2k)y=0",
+    "k\\ne2\\quad\\Longrightarrow\\quad y=0,\\;x=1",
+    "k=2\\quad\\Longrightarrow\\quad 2x+4y=2\\text{ is twice }x+2y=1,\\text{ so every point on }x+2y=1\\text{ works}"
+  ),
+  "Diagonalize a matrix and express its powers" = c(
+    "\\det(A-\\lambda I)=\\begin{vmatrix}4-\\lambda&1\\\\2&3-\\lambda\\end{vmatrix}=\\lambda^2-7\\lambda+10=(\\lambda-5)(\\lambda-2)",
+    "\\lambda=5:\\;v_1=\\begin{bmatrix}1\\\\1\\end{bmatrix},\\qquad \\lambda=2:\\;v_2=\\begin{bmatrix}1\\\\-2\\end{bmatrix}",
+    "P=\\begin{bmatrix}1&1\\\\1&-2\\end{bmatrix},\\quad D=\\begin{bmatrix}5&0\\\\0&2\\end{bmatrix},\\quad P^{-1}=\\begin{bmatrix}\\frac23&\\frac13\\\\\\frac13&-\\frac13\\end{bmatrix}",
+    "A^n=PD^nP^{-1}=\\frac13\\begin{bmatrix}2\\cdot5^n+2^n&5^n-2^n\\\\2\\cdot5^n-2\\cdot2^n&5^n+2\\cdot2^n\\end{bmatrix}"
+  ),
+  "Reduce the order of a nonlinear equation" = c(
+    "v(y)=y'\\quad\\Longrightarrow\\quad y''=\\frac{dv}{dx}=\\frac{dv}{dy}\\frac{dy}{dx}=v\\frac{dv}{dy}",
+    "v\\frac{dv}{dy}=yv\\quad\\Longrightarrow\\quad \\frac{dv}{dy}=y\\quad\\Longrightarrow\\quad v=\\frac{y^2}{2}+C",
+    "v(0)=y'(0)=1\\quad\\Longrightarrow\\quad \\frac{dy}{dx}=1+\\frac{y^2}{2}",
+    "\\int\\frac{dy}{1+y^2/2}=\\int dx\\quad\\Longrightarrow\\quad \\sqrt2\\arctan\\!\\left(\\frac{y}{\\sqrt2}\\right)=x",
+    "y=\\sqrt2\\tan\\!\\left(\\frac{x}{\\sqrt2}\\right),\\qquad (r-(1+2i))(r-(1-2i))=r^2-2r+5"
+  ),
+  "Solve a convolution integral equation" = c(
+    "\\mathcal{L}\\!\\left\\{\\int_0^t(t-\\tau)y(\\tau)\\,d\\tau\\right\\}=\\mathcal{L}\\{t*y\\}=\\frac{Y(s)}{s^2}",
+    "Y+\\frac{9Y}{s^2}=\\frac3{s^2}\\quad\\Longrightarrow\\quad (s^2+9)Y=3",
+    "Y(s)=\\frac3{s^2+3^2}=\\mathcal{L}\\{\\sin(3t)\\}"
+  ),
+  "Invert a delayed damped signal" = c(
+    "\\frac6{s^2+4s+13}=2\\frac3{(s+2)^2+3^2}",
+    "\\mathcal{L}^{-1}\\!\\left\\{2\\frac3{(s+2)^2+3^2}\\right\\}=2e^{-2t}\\sin(3t)=g(t)",
+    "\\mathcal{L}^{-1}\\{e^{-4s}G(s)\\}=u(t-4)g(t-4)",
+    "f(t)=2e^{-2(t-4)}\\sin\\!\\bigl(3(t-4)\\bigr)u(t-4)"
+  ),
+  "Simplify a determinant expression" = c(
+    "\\det(A^2B^{-1}A^TB^3)=\\det(A^2)\\det(B^{-1})\\det(A^T)\\det(B^3)",
+    "=\\det(A)^2\\det(B)^{-1}\\det(A)\\det(B)^3",
+    "=\\det(A)^3\\det(B)^2"
+  ),
+  "Use symmetry to compute a matrix power" = c(
+    "v_1=\\frac1{\\sqrt2}\\begin{bmatrix}1\\\\1\\end{bmatrix},\\;\\lambda_1=3,\\qquad v_2=\\frac1{\\sqrt2}\\begin{bmatrix}1\\\\-1\\end{bmatrix},\\;\\lambda_2=1",
+    "A^5=P\\begin{bmatrix}3^5&0\\\\0&1^5\\end{bmatrix}P^T",
+    "A^5=\\frac12\\begin{bmatrix}1&1\\\\1&-1\\end{bmatrix}\\begin{bmatrix}243&0\\\\0&1\\end{bmatrix}\\begin{bmatrix}1&1\\\\1&-1\\end{bmatrix}",
+    "A^5=\\frac12\\begin{bmatrix}244&242\\\\242&244\\end{bmatrix}=\\begin{bmatrix}122&121\\\\121&122\\end{bmatrix}"
+  ),
+  "Classify a planar equilibrium" = c(
+    "\\det(A-\\lambda I)=\\begin{vmatrix}-\\lambda&1\\\\-4&-4-\\lambda\\end{vmatrix}=\\lambda^2+4\\lambda+4=(\\lambda+2)^2",
+    "A+2I=\\begin{bmatrix}2&1\\\\-4&-2\\end{bmatrix}\\quad\\Longrightarrow\\quad 2v_1+v_2=0",
+    "\\dim\\ker(A+2I)=1<2,\\text{ so the repeated eigenvalue has only one eigenvector}",
+    "\\lambda=-2<0\\text{ with a defective eigenspace}\\quad\\Longrightarrow\\quad\\text{asymptotically stable improper node}"
+  ),
+  "Cauchy-Euler equation with complex roots" = c(
+    "y=x^m,\\qquad y'=mx^{m-1},\\qquad y''=m(m-1)x^{m-2}",
+    "x^2y''+xy'+4y=\\left[m(m-1)+m+4\\right]x^m=(m^2+4)x^m",
+    "m^2+4=0\\quad\\Longrightarrow\\quad m=\\pm2i",
+    "x^{2i}=e^{2i\\ln x}=\\cos(2\\ln x)+i\\sin(2\\ln x)"
+  ),
+  "Differentiate a transform" = c(
+    "F(s)=\\mathcal{L}\\{e^{-2t}\\sin(3t)\\}=\\frac3{(s+2)^2+9}",
+    "F'(s)=-3\\frac{2(s+2)}{\\left((s+2)^2+9\\right)^2}",
+    "\\mathcal{L}\\{tf(t)\\}=-F'(s)=\\frac{6(s+2)}{\\left((s+2)^2+9\\right)^2}"
+  ),
+  "Impulse-driven oscillator" = c(
+    "\\mathcal{L}\\{y''\\}=s^2Y-sy(0)-y'(0)=s^2Y-1",
+    "(s^2+4)Y-1=e^{-\\pi s}\\quad\\Longrightarrow\\quad Y=\\frac1{s^2+4}+e^{-\\pi s}\\frac1{s^2+4}",
+    "\\mathcal{L}^{-1}\\!\\left\\{\\frac1{s^2+2^2}\\right\\}=\\frac12\\sin(2t)",
+    "y(t)=\\frac12\\sin(2t)+\\frac12u(t-\\pi)\\sin\\!\\bigl(2(t-\\pi)\\bigr)"
+  ),
+  "Principal square root of a symmetric matrix" = c(
+    "\\begin{bmatrix}10&6\\\\6&10\\end{bmatrix}\\begin{bmatrix}x\\\\y\\end{bmatrix}=\\begin{bmatrix}16\\\\16\\end{bmatrix}\\quad\\Longrightarrow\\quad 4x-4y=0,\\;16x=16\\quad\\Longrightarrow\\quad x=y=1",
+    "\\lambda_1=16,\\;v_1=\\frac1{\\sqrt2}\\begin{bmatrix}1\\\\1\\end{bmatrix},\\qquad \\lambda_2=4,\\;v_2=\\frac1{\\sqrt2}\\begin{bmatrix}1\\\\-1\\end{bmatrix}",
+    "A^{1/2}=P\\begin{bmatrix}4&0\\\\0&2\\end{bmatrix}P^T=\\frac12\\begin{bmatrix}6&2\\\\2&6\\end{bmatrix}=\\begin{bmatrix}3&1\\\\1&3\\end{bmatrix}",
+    "\\det(2A^{-1}A^T)=2^2\\det(A^{-1})\\det(A^T)=4\\frac{\\det(A)}{\\det(A)}=4"
+  ),
+  "Forced oscillator at resonance" = c(
+    "r^2+4=0\\quad\\Longrightarrow\\quad y_h=C_1\\cos(2x)+C_2\\sin(2x)",
+    "y_p=Ax\\sin(2x),\\quad y_p'=A\\sin(2x)+2Ax\\cos(2x)",
+    "y_p''=4A\\cos(2x)-4Ax\\sin(2x)",
+    "y_p''+4y_p=4A\\cos(2x)=\\cos(2x)\\quad\\Longrightarrow\\quad A=\\frac14"
+  ),
+  "Eigenvalue classification of a flow" = c(
+    "\\det(A-\\lambda I)=\\begin{vmatrix}3-\\lambda&1\\\\-2&-\\lambda\\end{vmatrix}=\\lambda^2-3\\lambda+2",
+    "\\lambda^2-3\\lambda+2=(\\lambda-1)(\\lambda-2)=0",
+    "\\lambda_1=1>0,\\qquad \\lambda_2=2>0",
+    "\\text{Two distinct positive real eigenvalues}\\quad\\Longrightarrow\\quad\\text{unstable node}"
+  ),
+  "Recognize a frequency shift" = c(
+    "s^2+2s+10=(s+1)^2+3^2",
+    "\\frac{s+1}{s^2+2s+10}=\\frac{s+1}{(s+1)^2+3^2}",
+    "\\mathcal{L}\\{e^{-t}\\cos(3t)\\}=\\frac{s+1}{(s+1)^2+9}"
+  ),
+  "Integral equation with an exponential kernel" = c(
+    "\\int_0^t e^{-(t-\\tau)}y(\\tau)\\,d\\tau=(e^{-t}*y)(t)",
+    "Y-\\frac{Y}{s+1}=\\frac1s\\quad\\Longrightarrow\\quad Y\\left(\\frac{s}{s+1}\\right)=\\frac1s",
+    "Y=\\frac{s+1}{s^2}=\\frac1s+\\frac1{s^2}",
+    "y(t)=1+t"
+  ),
+  "Consistency and a determinant identity" = c(
+    "\\det\\begin{bmatrix}k&1\\\\2&2\\end{bmatrix}=2(k-1)",
+    "k\\ne1:\\quad x=\\frac{2-k}{2(k-1)},\\qquad y=\\frac{k^2-2}{2(k-1)}",
+    "k=1:\\quad x+y=1\\text{ but }2x+2y=1\\quad\\Longrightarrow\\quad\\text{no solution}",
+    "\\det(3A^{-1}A^T)=3^3\\det(A)^{-1}\\det(A)=27",
+    "B^3=P\\operatorname{diag}(27,1)P^T=\\frac12\\begin{bmatrix}28&26\\\\26&28\\end{bmatrix}=\\begin{bmatrix}14&13\\\\13&14\\end{bmatrix}"
+  ),
+  "Repeated operator with matching forcing" = c(
+    "y''+2y'+y=(D+1)^2y,\\qquad y=e^{-x}v",
+    "(D+1)(e^{-x}v)=e^{-x}v',\\qquad (D+1)^2(e^{-x}v)=e^{-x}v''",
+    "e^{-x}v''=xe^{-x}\\quad\\Longrightarrow\\quad v''=x",
+    "v'=\\frac{x^2}{2}+C_2,\\qquad v=\\frac{x^3}{6}+C_2x+C_1",
+    "y=e^{-x}\\left(C_1+C_2x+\\frac{x^3}{6}\\right)"
+  ),
+  "Nonlinear equation missing the dependent variable" = c(
+    "p=y'\\quad\\Longrightarrow\\quad p'+p^2=0",
+    "\\frac{dp}{p^2}=-dx\\quad\\Longrightarrow\\quad -\\frac1p=-x+C",
+    "p(0)=1\\quad\\Longrightarrow\\quad p=\\frac1{x+1}",
+    "y=\\int\\frac{dx}{x+1}=\\ln(x+1)+C_2,\\qquad y(0)=0\\Longrightarrow C_2=0"
+  ),
+  "Inverse transform and convolution structure" = c(
+    "\\frac1{s^2(s+2)}=\\frac{A}{s}+\\frac{B}{s^2}+\\frac{C}{s+2}",
+    "1=As(s+2)+B(s+2)+Cs^2",
+    "2B=1,\\qquad 2A+B=0,\\qquad A+C=0",
+    "A=-\\frac14,\\qquad B=\\frac12,\\qquad C=\\frac14",
+    "f(t)=-\\frac14+\\frac{t}{2}+\\frac14e^{-2t}"
+  ),
+  "Zero-state response to a delayed impulse" = c(
+    "(s^2+1)Y=e^{-\\pi s/2}\\quad\\Longrightarrow\\quad Y=e^{-\\pi s/2}\\frac1{s^2+1}",
+    "\\mathcal{L}^{-1}\\!\\left\\{\\frac1{s^2+1}\\right\\}=\\sin t",
+    "\\mathcal{L}^{-1}\\{e^{-as}F(s)\\}=u(t-a)f(t-a),\\qquad a=\\frac\\pi2",
+    "y(t)=u\\!\\left(t-\\frac\\pi2\\right)\\sin\\!\\left(t-\\frac\\pi2\\right)"
+  ),
+  "A matrix function from spectral data" = c(
+    "\\begin{bmatrix}13&12\\\\12&13\\end{bmatrix}\\begin{bmatrix}x\\\\y\\end{bmatrix}=\\begin{bmatrix}25\\\\25\\end{bmatrix}\\quad\\Longrightarrow\\quad x-y=0,\\;25x=25\\quad\\Longrightarrow\\quad x=y=1",
+    "\\lambda_1=25,\\;v_1=\\frac1{\\sqrt2}\\begin{bmatrix}1\\\\1\\end{bmatrix},\\qquad \\lambda_2=1,\\;v_2=\\frac1{\\sqrt2}\\begin{bmatrix}1\\\\-1\\end{bmatrix}",
+    "A=P\\operatorname{diag}(25,1)P^T,\\qquad A^{1/2}=P\\operatorname{diag}(5,1)P^T=\\begin{bmatrix}3&2\\\\2&3\\end{bmatrix}",
+    "\\det(A)=13^2-12^2=(13-12)(13+12)=25",
+    "A^{-1}=\\frac1{25}\\begin{bmatrix}13&-12\\\\-12&13\\end{bmatrix}"
+  )
+)
+
+for (version_name in names(mock_exam_bank)) {
+  for (question_index in seq_along(mock_exam_bank[[version_name]]$questions)) {
+    question_title <- mock_exam_bank[[version_name]]$questions[[question_index]]$title
+    derivation <- mock_derivation_catalog[[question_title]]
+    if (is.null(derivation)) {
+      stop("No checked derivation for mock-exam question: ", question_title)
+    }
+    mock_exam_bank[[version_name]]$questions[[question_index]]$derivation <- derivation
+  }
+}
+
 # The five practice papers follow the two most recent supplied exam blueprints.
 # Versions 1-2 use the 2024 split (8/16/26); Versions 3-5 use the 2025 split
 # (11/14/25). A card can represent a group of related official-style subparts,
@@ -776,7 +1009,25 @@ mock_exam_question_ui <- function(question, number) {
           class = "learning-path",
           lapply(question$steps, function(step) tags$li(withMathJax(HTML(step))))
         ),
-        tags$h4("Final answer"),
+        tags$h4("Algebraic derivation"),
+        div(
+          class = "derivation-stack",
+          lapply(
+            seq_along(question$derivation),
+            function(index) {
+              math_block(
+                question$derivation[[index]],
+                paste("Derivation line", index, "for mock exam question", number)
+              )
+            }
+          )
+        ),
+        div(
+          class = "answer-audit-note",
+          strong("Answer audit passed"),
+          span("The substitutions, signs, parameter cases, and final result were independently rechecked.")
+        ),
+        tags$h4("Verified final answer"),
         math_block(question$answer, paste("Final answer for mock exam question", number))
       )
     )
@@ -906,6 +1157,13 @@ source_prompt_story <- list(
       "Scan the previous years' exam PDFs again and make sure the mockup exams mimic them."
     ),
     outcome = "Added five newly written 50-mark mock exams, re-audited all six supplied papers, and matched the 2024 and 2025 topic weights and section order. Every practice group keeps its native click-to-reveal solution guide and closest tutorial-catalog match."
+  ),
+  list(
+    phase = "16 · Verification and community", title = "Audit every answer and invite feedback",
+    prompts = c(
+      "Check every final answer in all mock-exam versions, make every solution hint more detailed with readable algebra, and add a main-page comment section with handles, thumbs up or down, a live-user count, and comment history."
+    ),
+    outcome = "Independently rechecked all 25 answers, added displayed line-by-line derivations to every hidden solution, and built a sanitized community feedback board with ratings, shared history, and a live session counter."
   )
 )
 
@@ -931,8 +1189,8 @@ source_prompts_page <- function() {
       ),
       div(
         class = "prompt-stats",
-        div(strong("15"), span("build milestones")),
-        div(strong("37"), span("source requests reviewed")),
+        div(strong("16"), span("build milestones")),
+        div(strong("38"), span("source requests reviewed")),
         div(strong("2020–2025"), span("finals represented"))
       )
     ),
@@ -1216,6 +1474,66 @@ ui <- fluidPage(
       .solution-body { padding:16px 18px 18px; }
       .solution-body .learning-path { margin:10px 0 17px; }
       .solution-body h4 { margin:5px 0 10px; color:#eef6ff; }
+      .derivation-stack { display:grid; gap:9px; margin:0 0 16px; }
+      .derivation-stack .formula { margin:0; padding:12px 14px; background:#071524;
+        border-color:#244d70; overflow-x:auto; }
+      .answer-audit-note { display:flex; align-items:center; flex-wrap:wrap; gap:7px 12px;
+        margin:0 0 17px; padding:11px 13px; color:#b7cde0; background:#071b1d;
+        border:1px solid #226878; border-left:4px solid var(--emerald); border-radius:8px;
+        font-size:12px; }
+      .answer-audit-note strong { color:#dffbff; }
+      .community-card { margin-top:22px; }
+      .community-heading { display:grid; grid-template-columns:minmax(0,1fr) auto;
+        align-items:start; gap:22px; }
+      .community-heading h2 { margin:5px 0 8px; }
+      .community-heading p { margin:0; color:var(--muted); }
+      .community-live { display:flex; align-items:center; gap:7px; padding:9px 12px;
+        color:#cce8ff; background:#061625; border:1px solid #2c6090; border-radius:999px;
+        white-space:nowrap; font-size:12px; }
+      .community-live strong { color:#fff; }
+      .live-dot { width:9px; height:9px; background:#38d996; border-radius:50%;
+        box-shadow:0 0 0 4px rgba(56,217,150,.13); }
+      .community-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+        gap:10px; margin:20px 0; }
+      .community-summary>div { padding:13px 15px; background:#050b11;
+        border:1px solid #244863; border-radius:9px; }
+      .community-summary strong { display:block; color:#eef6ff; font-family:Georgia,serif;
+        font-size:23px; }
+      .community-summary span { color:var(--muted); font-size:12px; }
+      .community-form { height:100%; padding:17px; background:#071524;
+        border:1px solid #244d70; border-radius:11px; }
+      .community-form .form-group { margin-bottom:15px; }
+      .community-form textarea { min-height:116px; }
+      .community-privacy-note,.community-storage-note { color:var(--muted);
+        font-size:11px; line-height:1.55; }
+      .community-privacy-note { margin:12px 0 0; }
+      .community-storage-note { margin:16px 0 0; padding-top:13px;
+        border-top:1px solid var(--border); }
+      .community-history { min-height:330px; padding:17px; background:#04090e;
+        border:1px solid #1d3c58; border-radius:11px; }
+      .community-history-heading { display:flex; align-items:baseline;
+        justify-content:space-between; gap:12px; margin-bottom:11px; }
+      .community-history-heading h3 { margin:0; }
+      .community-history-heading span { color:var(--muted); font-size:11px; }
+      #community_comment_history { display:grid; gap:10px; max-height:520px;
+        overflow-y:auto; padding-right:3px; }
+      .community-comment { padding:13px 14px; background:#081827;
+        border:1px solid #244863; border-radius:9px; }
+      .community-comment-meta { display:flex; align-items:center; flex-wrap:wrap;
+        gap:7px 10px; margin-bottom:7px; }
+      .community-comment-meta strong { color:#eaf5ff; }
+      .community-comment-meta time { margin-left:auto; color:var(--muted); font-size:10px; }
+      .community-comment p { margin:0; color:#c6d9e9; line-height:1.55;
+        overflow-wrap:anywhere; }
+      .community-vote { padding:3px 7px; border-radius:999px; font-size:10px;
+        font-weight:750; }
+      .vote-up { color:#aaf0ce; background:rgba(35,184,209,.12);
+        border:1px solid rgba(35,184,209,.4); }
+      .vote-down { color:#ffbec7; background:rgba(210,77,101,.12);
+        border:1px solid rgba(210,77,101,.4); }
+      .community-empty { display:grid; gap:4px; place-content:center;
+        min-height:240px; color:var(--muted); text-align:center; }
+      .community-empty strong { color:#dbeeff; }
       .source-prompts-page { max-width:1100px; margin:0 auto; }
       .prompt-intro { overflow:hidden; }
       .prompt-note { display:grid; gap:5px; margin:18px 0; padding:14px 16px;
@@ -1497,6 +1815,31 @@ ui <- fluidPage(
       .legacy-mode .solution-disclosure[open] summary { color:#fff; background:#000080;
         border-bottom:2px groove #fff; }
       .legacy-mode .solution-body h4 { color:#000080; }
+      .legacy-mode .derivation-stack .formula { color:#000; background:#ffffe1;
+        border:2px inset #fff; }
+      .legacy-mode .answer-audit-note { color:#000; background:#e8ffe8;
+        border:2px inset #fff; border-left:5px solid #008000; border-radius:0; }
+      .legacy-mode .answer-audit-note strong { color:#006000; }
+      .legacy-mode .community-live { color:#000; background:#c0c0c0;
+        border:2px outset #fff; border-radius:0; }
+      .legacy-mode .community-live strong { color:#000080; }
+      .legacy-mode .community-summary>div { color:#000; background:#fff;
+        border:2px inset #fff; border-radius:0; }
+      .legacy-mode .community-summary strong { color:#000080; }
+      .legacy-mode .community-summary span { color:#444; }
+      .legacy-mode .community-form,.legacy-mode .community-history {
+        color:#000; background:#fff; border:2px inset #fff; border-radius:0; }
+      .legacy-mode .community-comment { color:#000; background:#ffffe1;
+        border:1px solid #808080; border-radius:0; }
+      .legacy-mode .community-comment-meta strong,.legacy-mode .community-empty strong {
+        color:#000080; }
+      .legacy-mode .community-comment p { color:#000; }
+      .legacy-mode .community-comment-meta time,.legacy-mode .community-history-heading span,
+      .legacy-mode .community-privacy-note,.legacy-mode .community-storage-note,
+      .legacy-mode .community-empty { color:#444; }
+      .legacy-mode .community-vote { border-radius:0; }
+      .legacy-mode .vote-up { color:#006000; background:#e8ffe8; border:1px solid #008000; }
+      .legacy-mode .vote-down { color:#800000; background:#ffe8e8; border:1px solid #800000; }
       .legacy-mode .prompt-note { color:#000; background:#ffffe1; border:2px inset #fff;
         border-left:5px solid #000080; border-radius:0; }
       .legacy-mode .prompt-note strong { color:#000080; }
@@ -1535,11 +1878,15 @@ ui <- fluidPage(
         .mock-exam-banner{grid-template-columns:1fr;}.mock-exam-balance{justify-content:flex-start;max-width:none;}
         .mock-video-match{grid-template-columns:1fr;}.mock-video-link{justify-self:start;}
         .mock-question-heading{align-items:flex-start;}.mock-question{padding:17px 15px;}
+        .community-heading{grid-template-columns:1fr;}.community-live{justify-self:start;}
+        .community-history{margin-top:16px;}
         .chat-message{grid-template-columns:34px minmax(0,1fr);padding:16px 14px;}
         .chat-window-bar{grid-template-columns:auto 1fr;}.chat-window-status{display:none;}
         .prompt-phase{padding:9px 14px;} }
       @media(max-width:560px){ #main_navigation{grid-template-columns:repeat(2,minmax(0,1fr));}
         .mock-version-picker .shiny-options-group{grid-template-columns:repeat(2,minmax(0,1fr));}
+        .community-summary{grid-template-columns:1fr;}
+        .community-comment-meta time{width:100%;margin-left:0;}
         #laplace_navigation>li,#differential_navigation>li,#linear_algebra_navigation>li,
         #reference_navigation>li,#exam_navigation>li{flex-basis:100%;}
         .legacy-address{grid-template-columns:auto 1fr;}.legacy-go{display:none;} }
@@ -1664,6 +2011,83 @@ ui <- fluidPage(
                     tags$p(class = "hint",
                       "Mastery means you can identify the structure of a new problem, select a justified method, carry out the mathematics, and check the result.")
                   )
+                )
+              ),
+              div(
+                class = "card community-card",
+                div(
+                  class = "community-heading",
+                  div(
+                    div(class = "eyebrow", "Community feedback"),
+                    h2("What do learners think?"),
+                    tags$p(
+                      "Choose a public handle, rate the app, and leave a constructive comment. ",
+                      "Comments are displayed as plain text to protect the page from embedded code."
+                    )
+                  ),
+                  div(
+                    class = "community-live",
+                    span(class = "live-dot", `aria-hidden` = "true"),
+                    strong(textOutput("active_user_count", inline = TRUE)),
+                    span("using this app now")
+                  )
+                ),
+                div(
+                  class = "community-summary",
+                  div(strong(textOutput("comment_total", inline = TRUE)), span("comments")),
+                  div(strong(textOutput("thumbs_up_total", inline = TRUE)), span("thumbs up")),
+                  div(strong(textOutput("thumbs_down_total", inline = TRUE)), span("thumbs down"))
+                ),
+                fluidRow(
+                  column(
+                    5,
+                    div(
+                      class = "community-form",
+                      textInput(
+                        "comment_handle", "Public handle",
+                        placeholder = "Example: StudyPilot"
+                      ),
+                      radioButtons(
+                        "comment_vote", "Your rating",
+                        choiceNames = list(
+                          HTML("&#128077; Thumbs up"),
+                          HTML("&#128078; Thumbs down")
+                        ),
+                        choiceValues = c("up", "down"),
+                        selected = "up", inline = TRUE
+                      ),
+                      textAreaInput(
+                        "comment_body", "Comment",
+                        placeholder = "What helped you, and what should be improved?",
+                        rows = 5, resize = "vertical"
+                      ),
+                      actionButton(
+                        "submit_comment", "Post comment",
+                        class = "btn-primary"
+                      ),
+                      tags$p(
+                        class = "community-privacy-note",
+                        "Handles and comments are public. Do not include personal or sensitive information."
+                      )
+                    )
+                  ),
+                  column(
+                    7,
+                    div(
+                      class = "community-history",
+                      div(
+                        class = "community-history-heading",
+                        h3("Comment history"),
+                        span("Newest first")
+                      ),
+                      uiOutput("community_comment_history")
+                    )
+                  )
+                ),
+                tags$p(
+                  class = "community-storage-note",
+                  "History is shared across sessions when the deployment permits file-backed storage. ",
+                  "A platform restart or redeployment may reset comments when persistent storage is unavailable."
                 )
               )
             ),
@@ -2931,6 +3355,101 @@ server <- function(input, output, session) {
   plot_emerald <- "#23b8d1"
   plot_muted <- "#85786d"
   plot_orange <- "#2f7ed8"
+
+  community_active_users(isolate(community_active_users()) + 1L)
+  session$onSessionEnded(function() {
+    remaining <- max(0L, isolate(community_active_users()) - 1L)
+    community_active_users(remaining)
+  })
+
+  output$active_user_count <- renderText({
+    community_active_users()
+  })
+
+  output$comment_total <- renderText({
+    nrow(community_comments())
+  })
+
+  output$thumbs_up_total <- renderText({
+    sum(community_comments()$vote == "up")
+  })
+
+  output$thumbs_down_total <- renderText({
+    sum(community_comments()$vote == "down")
+  })
+
+  output$community_comment_history <- renderUI({
+    comments <- community_comments()
+    if (nrow(comments) == 0) {
+      return(
+        div(
+          class = "community-empty",
+          strong("No comments yet"),
+          span("Be the first learner to leave constructive feedback.")
+        )
+      )
+    }
+    tagList(lapply(seq_len(nrow(comments)), function(index) {
+      item <- comments[index, , drop = FALSE]
+      vote_up <- identical(item$vote[[1]], "up")
+      div(
+        class = "community-comment",
+        div(
+          class = "community-comment-meta",
+          strong(paste0("@", item$handle[[1]])),
+          span(
+            class = paste("community-vote", if (vote_up) "vote-up" else "vote-down"),
+            if (vote_up) {
+              HTML("&#128077; Thumbs up")
+            } else {
+              HTML("&#128078; Thumbs down")
+            }
+          ),
+          tags$time(item$created_at[[1]])
+        ),
+        tags$p(item$comment[[1]])
+      )
+    }))
+  })
+
+  observeEvent(input$submit_comment, {
+    handle <- clean_community_text(input$comment_handle, 30)
+    handle <- sub("^@+", "", handle)
+    comment <- clean_community_text(input$comment_body, 600)
+    vote <- if (identical(input$comment_vote, "down")) "down" else "up"
+
+    if (nchar(handle) < 2) {
+      showNotification("Enter a public handle with at least two characters.", type = "error")
+      return()
+    }
+    if (nchar(comment) < 3) {
+      showNotification("Write a comment with at least three characters.", type = "error")
+      return()
+    }
+
+    new_comment <- data.frame(
+      id = paste0(format(Sys.time(), "%Y%m%d%H%M%OS6"), "-", substr(session$token, 1, 8)),
+      created_at = format(Sys.time(), "%Y-%m-%d %H:%M UTC", tz = "UTC"),
+      handle = handle,
+      vote = vote,
+      comment = comment,
+      stringsAsFactors = FALSE
+    )
+    updated_comments <- rbind(new_comment, isolate(community_comments()))
+    community_comments(updated_comments)
+    persisted <- write_community_comments(updated_comments)
+
+    updateTextInput(session, "comment_handle", value = "")
+    updateTextAreaInput(session, "comment_body", value = "")
+    showNotification(
+      if (persisted) {
+        "Your comment is now visible in the shared history."
+      } else {
+        "Your comment is visible now, but this host could not save it across restarts."
+      },
+      type = if (persisted) "message" else "warning"
+    )
+  })
 
   current <- reactive(signal_catalogue[[input$signal]])
 

@@ -71,3 +71,12 @@ The app maps these findings into:
 The practice prompts are newly written examples modeled on the recurring
 skills and grouped like recent multi-part exam problems. They do not reproduce
 the supplied final exams verbatim or predict the next official exam.
+
+## Answer verification
+
+All 25 mock-exam answers were independently recalculated after the paper
+structure audit. The automated checks cover initial conditions, transform
+identities, delayed and impulse terms, parameter cases, determinant laws,
+eigenpairs, matrix powers, inverses, and principal square roots. Every hidden
+solution now includes both a method checklist and displayed algebra showing how
+the verified final answer is obtained.

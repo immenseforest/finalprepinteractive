@@ -9,6 +9,8 @@ The app includes:
 - Differential-equation characteristic-root and phase-portrait labs
 - Linear-system and eigenvalue labs
 - Exam coverage map, mastery checklist, and practice generator
+- Five 50-mark mock finals with verified answers, displayed algebra, and tutorial matches
+- A community feedback board with handles, ratings, comment history, and a live-session count
 
 ## Run
 
@@ -19,3 +21,10 @@ shiny::runApp()
 
 The app intentionally uses base R plotting, so `shiny` is its only required
 package.
+
+## Comment storage
+
+The community board stores comments in `community-data/comments.rds` when the
+host permits file writes. Set `FINALPREP_COMMENT_DIR` to a persistent writable
+directory in production. If persistent storage is unavailable, the app falls
+back safely and explains that comments may reset after a restart or redeploy.
