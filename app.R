@@ -691,9 +691,10 @@ source_prompt_story <- list(
   list(
     phase = "15 · Exam simulation", title = "Generate five full practice finals",
     prompts = c(
-      "Under the Exam Practice page, make a subpage called Mockup Exam with five predicted versions. Put a step-by-step solution hint under every question, hidden until the user clicks."
+      "Under the Exam Practice page, make a subpage called Mockup Exam with five predicted versions. Put a step-by-step solution hint under every question, hidden until the user clicks.",
+      "I only see Version 1."
     ),
-    outcome = "Added five newly written 100-mark mock exams modeled on recurring 2020–2025 patterns, with 25 questions and a native click-to-reveal solution guide beneath every problem."
+    outcome = "Added five newly written 100-mark mock exams modeled on recurring 2020–2025 patterns, with 25 questions and a native click-to-reveal solution guide beneath every problem. Replaced the compact dropdown with five always-visible version buttons."
   )
 )
 
@@ -720,7 +721,7 @@ source_prompts_page <- function() {
       div(
         class = "prompt-stats",
         div(strong("15"), span("build milestones")),
-        div(strong("34"), span("source requests reviewed")),
+        div(strong("35"), span("source requests reviewed")),
         div(strong("2020–2025"), span("finals represented"))
       )
     ),
@@ -937,6 +938,19 @@ ui <- fluidPage(
         color:#c9ddf0; background:#071b2d; border:1px solid rgba(77,163,255,.38);
         border-left:4px solid var(--cyan); border-radius:9px; line-height:1.55; }
       .mock-exam-instructions strong { color:#eef6ff; }
+      .mock-version-picker { margin-top:17px; }
+      .mock-version-picker .control-label { display:block; margin-bottom:9px; }
+      .mock-version-picker .shiny-options-group { display:grid;
+        grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
+      .mock-version-picker .radio-inline { display:flex; align-items:center; min-height:42px;
+        margin:0; padding:8px 10px; color:#c8d9e9; background:#050b11;
+        border:1px solid #29465f; border-radius:9px; cursor:pointer; }
+      .mock-version-picker .radio-inline:hover { color:#fff; border-color:var(--cyan);
+        background:#0b2945; }
+      .mock-version-picker .radio-inline input { position:static; margin:0 8px 0 0;
+        accent-color:#4da3ff; }
+      .mock-version-picker .radio-inline:has(input:checked) { color:#fff;
+        background:#0b2945; border-color:var(--cyan); box-shadow:inset 0 -2px 0 var(--cyan); }
       .mock-exam-banner { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:20px;
         align-items:center; margin:0 0 18px; padding:18px 20px; color:#d8e8f7;
         background:linear-gradient(120deg,#0b2945,#06101a); border:1px solid #27557c;
@@ -1214,6 +1228,13 @@ ui <- fluidPage(
       .legacy-mode .mock-exam-instructions { color:#000; background:#ffffe1;
         border:2px inset #fff; border-left:5px solid #000080; border-radius:0; }
       .legacy-mode .mock-exam-instructions strong { color:#000080; }
+      .legacy-mode .mock-version-picker .radio-inline { color:#000; background:#c0c0c0;
+        border:2px outset #fff; border-radius:0; font-family:Arial,sans-serif; }
+      .legacy-mode .mock-version-picker .radio-inline:hover { color:#000;
+        background:#d4d0c8; border-color:#fff; }
+      .legacy-mode .mock-version-picker .radio-inline:has(input:checked) { color:#fff;
+        background:#000080; border:2px inset #fff; box-shadow:none; }
+      .legacy-mode .mock-version-picker .radio-inline input { accent-color:#000080; }
       .legacy-mode .mock-exam-banner { color:#000; background:#ffffe1;
         border:2px ridge #c0c0c0; border-radius:0; }
       .legacy-mode .mock-exam-banner h3 { color:#000080; }
@@ -1267,12 +1288,14 @@ ui <- fluidPage(
         .module-heading{grid-template-columns:1fr;} .module-seal{width:46px;height:46px;}
         .theme-toggle{position:static;margin-top:16px;} .legacy-mode h1{max-width:none;}
         .legacy-mode .theme-toggle{position:static;} .prompt-stats{grid-template-columns:1fr;}
+        .mock-version-picker .shiny-options-group{grid-template-columns:repeat(3,minmax(0,1fr));}
         .mock-exam-banner{grid-template-columns:1fr;}.mock-exam-balance{justify-content:flex-start;max-width:none;}
         .mock-question-heading{align-items:flex-start;}.mock-question{padding:17px 15px;}
         .chat-message{grid-template-columns:34px minmax(0,1fr);padding:16px 14px;}
         .chat-window-bar{grid-template-columns:auto 1fr;}.chat-window-status{display:none;}
         .prompt-phase{padding:9px 14px;} }
       @media(max-width:560px){ #main_navigation{grid-template-columns:repeat(2,minmax(0,1fr));}
+        .mock-version-picker .shiny-options-group{grid-template-columns:repeat(2,minmax(0,1fr));}
         #laplace_navigation>li,#differential_navigation>li,#linear_algebra_navigation>li,
         #reference_navigation>li,#exam_navigation>li{flex-basis:100%;}
         .legacy-address{grid-template-columns:auto 1fr;}.legacy-go{display:none;} }
@@ -2454,9 +2477,13 @@ ui <- fluidPage(
                       strong("Recommended attempt"),
                       span("Allow about 150 minutes, work without revealing hints, then use each solution disclosure to mark your method and final result.")
                     ),
-                    selectInput(
-                      "mock_exam_version", "Choose a mock exam version",
-                      choices = names(mock_exam_bank), selected = "Version 1"
+                    div(
+                      class = "mock-version-picker",
+                      radioButtons(
+                        "mock_exam_version", "Choose a mock exam version",
+                        choices = names(mock_exam_bank), selected = "Version 1",
+                        inline = TRUE
+                      )
                     )
                   ),
                   uiOutput("mock_exam_questions")
