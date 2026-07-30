@@ -229,6 +229,351 @@ linear_algebra_videos <- list(
        url = "https://www.youtube.com/watch?v=ieWyx2mlZyk")
 )
 
+mock_question <- function(topic, title, prompt, steps, answer) {
+  list(topic = topic, title = title, prompt = prompt, steps = steps, answer = answer)
+}
+
+# Five newly written practice finals modeled on the recurring skills in the
+# supplied 2020-2025 papers. They are predictions for study coverage, not copies
+# of past questions or claims about the contents of a future final.
+mock_exam_bank <- list(
+  "Version 1" = list(
+    subtitle = "Balanced foundations",
+    emphasis = "A broad rehearsal of characteristic roots, transform shifts, step inputs, parameterized systems, and diagonalization.",
+    questions = list(
+      mock_question(
+        "Differential equations · 20 marks", "Constant-coefficient initial-value problem",
+        "y''+4y'+3y=0,\\qquad y(0)=2,\\quad y'(0)=-4",
+        c(
+          "Form the characteristic equation \\(r^2+4r+3=0\\).",
+          "Factor it to obtain the two modes associated with \\(r=-1\\) and \\(r=-3\\).",
+          "Write \\(y=C_1e^{-x}+C_2e^{-3x}\\), then apply both initial conditions.",
+          "Solve \\(C_1+C_2=2\\) and \\(-C_1-3C_2=-4\\)."
+        ),
+        "y(x)=e^{-x}+e^{-3x}"
+      ),
+      mock_question(
+        "Laplace transforms · 20 marks", "Inverse transform by completing the square",
+        "\\mathcal{L}^{-1}\\!\\left\\{\\frac{2s+5}{s^2+4s+13}\\right\\}",
+        c(
+          "Complete the square: \\(s^2+4s+13=(s+2)^2+9\\).",
+          "Rewrite the numerator as \\(2(s+2)+1\\).",
+          "Match the two pieces to the shifted cosine and sine transform pairs.",
+          "Use the frequency-shift rule: replacing \\(s\\) by \\(s+2\\) multiplies the time function by \\(e^{-2t}\\)."
+        ),
+        "f(t)=2e^{-2t}\\cos(3t)+\\frac{1}{3}e^{-2t}\\sin(3t)"
+      ),
+      mock_question(
+        "Laplace transforms · 20 marks", "Delayed forcing in an initial-value problem",
+        "y'+2y=u(t-3),\\qquad y(0)=1",
+        c(
+          "Transform the equation to get \\((s+2)Y-1=e^{-3s}/s\\).",
+          "Isolate \\(Y\\) as \\(1/(s+2)+e^{-3s}/[s(s+2)]\\).",
+          "Use partial fractions: \\(1/[s(s+2)]=\\tfrac12(1/s-1/(s+2))\\).",
+          "Apply the second-shifting theorem to the delayed term."
+        ),
+        "y(t)=e^{-2t}+\\frac12\\left[1-e^{-2(t-3)}\\right]u(t-3)"
+      ),
+      mock_question(
+        "Linear algebra · 20 marks", "Classify a parameterized linear system",
+        "x+ky=1,\\qquad 2x+4y=2",
+        c(
+          "Write the coefficient matrix and compute its determinant \\(4-2k\\).",
+          "When \\(k\\ne2\\), the determinant is nonzero, so the solution is unique.",
+          "Substitute \\(x=1-ky\\) into the second equation to find that unique solution.",
+          "When \\(k=2\\), compare the two equations and determine whether they coincide or contradict."
+        ),
+        "\\begin{cases}k\\ne2:&(x,y)=(1,0),\\\\k=2:&\\text{infinitely many solutions on }x+2y=1.\\end{cases}"
+      ),
+      mock_question(
+        "Linear algebra · 20 marks", "Diagonalize a matrix and express its powers",
+        "A=\\begin{bmatrix}4&1\\\\2&3\\end{bmatrix},\\qquad \\text{find a diagonalization and }A^n",
+        c(
+          "Compute \\(\\det(A-\\lambda I)=(\\lambda-5)(\\lambda-2)\\).",
+          "Find eigenvectors \\(v_1=(1,1)^T\\) for \\(\\lambda=5\\) and \\(v_2=(1,-2)^T\\) for \\(\\lambda=2\\).",
+          "Build \\(P=[v_1\\ v_2]\\) and \\(D=\\operatorname{diag}(5,2)\\).",
+          "Use \\(A=PDP^{-1}\\), then raise only the diagonal entries to obtain \\(A^n=PD^nP^{-1}\\)."
+        ),
+        "A^n=\\begin{bmatrix}1&1\\\\1&-2\\end{bmatrix}\\begin{bmatrix}5^n&0\\\\0&2^n\\end{bmatrix}\\begin{bmatrix}\\frac23&\\frac13\\\\\\frac13&-\\frac13\\end{bmatrix}"
+      )
+    )
+  ),
+  "Version 2" = list(
+    subtitle = "Signals and structure",
+    emphasis = "Extra weight on nonlinear reduction, convolution, delayed signals, determinant laws, and symmetric diagonalization.",
+    questions = list(
+      mock_question(
+        "Differential equations · 20 marks", "Reduce the order of a nonlinear equation",
+        "y''=yy',\\qquad y(0)=0,\\quad y'(0)=1",
+        c(
+          "Because \\(x\\) is absent, set \\(v(y)=y'\\), so \\(y''=v\\,dv/dy\\).",
+          "Substitute to obtain \\(v\\,dv/dy=yv\\), then use the nonzero branch through the initial data.",
+          "Integrate \\(dv/dy=y\\) and use \\(v(0)=1\\) to get \\(y'=1+y^2/2\\).",
+          "Separate variables, integrate, and use \\(y(0)=0\\)."
+        ),
+        "y(x)=\\sqrt{2}\\tan\\!\\left(\\frac{x}{\\sqrt{2}}\\right)"
+      ),
+      mock_question(
+        "Laplace transforms · 20 marks", "Solve a convolution integral equation",
+        "y(t)+9\\int_0^t(t-\\tau)y(\\tau)\\,d\\tau=3t",
+        c(
+          "Recognize the integral as the convolution \\(t*y(t)\\).",
+          "Transform it using \\(\\mathcal{L}\\{t\\}=1/s^2\\), giving \\(Y+9Y/s^2=3/s^2\\).",
+          "Solve algebraically for \\(Y\\).",
+          "Match the result to the transform of a sine."
+        ),
+        "y(t)=\\sin(3t)"
+      ),
+      mock_question(
+        "Laplace transforms · 20 marks", "Invert a delayed damped signal",
+        "\\mathcal{L}^{-1}\\!\\left\\{e^{-4s}\\frac{6}{s^2+4s+13}\\right\\}",
+        c(
+          "Complete the square in the denominator: \\((s+2)^2+3^2\\).",
+          "First invert the undelayed transform as \\(2e^{-2t}\\sin(3t)\\).",
+          "For the factor \\(e^{-4s}\\), replace \\(t\\) by \\(t-4\\).",
+          "Multiply the shifted signal by \\(u(t-4)\\)."
+        ),
+        "f(t)=2e^{-2(t-4)}\\sin\\!\\bigl(3(t-4)\\bigr)u(t-4)"
+      ),
+      mock_question(
+        "Linear algebra · 20 marks", "Simplify a determinant expression",
+        "\\det\\!\\left(A^2B^{-1}A^TB^3\\right)",
+        c(
+          "Split the determinant of the product into a product of determinants.",
+          "Use \\(\\det(A^2)=\\det(A)^2\\) and \\(\\det(A^T)=\\det(A)\\).",
+          "Use \\(\\det(B^{-1})=\\det(B)^{-1}\\) and \\(\\det(B^3)=\\det(B)^3\\).",
+          "Combine the powers belonging to each matrix."
+        ),
+        "\\det\\!\\left(A^2B^{-1}A^TB^3\\right)=\\det(A)^3\\det(B)^2"
+      ),
+      mock_question(
+        "Linear algebra · 20 marks", "Use symmetry to compute a matrix power",
+        "A=\\begin{bmatrix}2&1\\\\1&2\\end{bmatrix},\\qquad \\text{compute }A^5",
+        c(
+          "Use the orthogonal eigen-directions \\((1,1)^T\\) and \\((1,-1)^T\\).",
+          "Their eigenvalues are \\(3\\) and \\(1\\), respectively.",
+          "Write \\(A=P\\operatorname{diag}(3,1)P^T\\) with normalized eigenvectors.",
+          "Replace the eigenvalues by \\(3^5\\) and \\(1^5\\), then multiply."
+        ),
+        "A^5=\\begin{bmatrix}122&121\\\\121&122\\end{bmatrix}"
+      )
+    )
+  ),
+  "Version 3" = list(
+    subtitle = "Dynamics and impulses",
+    emphasis = "A rehearsal of phase classification, Cauchy-Euler modes, transform differentiation, impulse response, and matrix roots.",
+    questions = list(
+      mock_question(
+        "Differential equations · 20 marks", "Classify a planar equilibrium",
+        "\\mathbf{x}'=\\begin{bmatrix}0&1\\\\-4&-4\\end{bmatrix}\\mathbf{x}",
+        c(
+          "Compute the characteristic polynomial \\(\\lambda^2+4\\lambda+4\\).",
+          "The repeated eigenvalue is \\(\\lambda=-2\\).",
+          "Check the nullspace of \\(A+2I\\) and observe that only one independent eigenvector is available.",
+          "Combine the negative real eigenvalue with the defective eigenspace to classify the origin."
+        ),
+        "\\text{The origin is an asymptotically stable improper node.}"
+      ),
+      mock_question(
+        "Differential equations · 20 marks", "Cauchy-Euler equation with complex roots",
+        "x^2y''+xy'+4y=0,\\qquad x>0",
+        c(
+          "Try the Cauchy-Euler form \\(y=x^m\\).",
+          "Substitution gives \\(m(m-1)+m+4=m^2+4=0\\).",
+          "The roots are \\(m=\\pm2i\\).",
+          "Convert \\(x^{\\pm2i}\\) into real sine and cosine functions of \\(\\ln x\\)."
+        ),
+        "y(x)=C_1\\cos(2\\ln x)+C_2\\sin(2\\ln x)"
+      ),
+      mock_question(
+        "Laplace transforms · 20 marks", "Differentiate a transform",
+        "\\mathcal{L}\\{te^{-2t}\\sin(3t)\\}",
+        c(
+          "Begin with \\(F(s)=\\mathcal{L}\\{e^{-2t}\\sin(3t)\\}=3/[(s+2)^2+9]\\).",
+          "Use \\(\\mathcal{L}\\{tf(t)\\}=-F'(s)\\).",
+          "Differentiate the reciprocal carefully with the chain rule.",
+          "Simplify the two negative signs."
+        ),
+        "\\mathcal{L}\\{te^{-2t}\\sin(3t)\\}=\\frac{6(s+2)}{\\left((s+2)^2+9\\right)^2}"
+      ),
+      mock_question(
+        "Laplace transforms · 20 marks", "Impulse-driven oscillator",
+        "y''+4y=\\delta(t-\\pi),\\qquad y(0)=0,\\quad y'(0)=1",
+        c(
+          "Transform the left side, including both initial conditions.",
+          "Use \\(\\mathcal{L}\\{\\delta(t-\\pi)\\}=e^{-\\pi s}\\).",
+          "Solve \\((s^2+4)Y-1=e^{-\\pi s}\\) for \\(Y\\).",
+          "Invert the ordinary and delayed sine terms separately."
+        ),
+        "y(t)=\\frac12\\sin(2t)+\\frac12\\sin\\!\\bigl(2(t-\\pi)\\bigr)u(t-\\pi)"
+      ),
+      mock_question(
+        "Linear algebra · 20 marks", "Principal square root of a symmetric matrix",
+        "A=\\begin{bmatrix}10&6\\\\6&10\\end{bmatrix},\\qquad \\text{find }A^{1/2}",
+        c(
+          "Find the eigenvalues along \\((1,1)^T\\) and \\((1,-1)^T\\): they are \\(16\\) and \\(4\\).",
+          "Use normalized eigenvectors to form an orthogonal matrix \\(P\\).",
+          "Take the positive square roots of the eigenvalues to obtain \\(\\operatorname{diag}(4,2)\\).",
+          "Reconstruct the principal root as \\(P\\operatorname{diag}(4,2)P^T\\)."
+        ),
+        "A^{1/2}=\\begin{bmatrix}3&1\\\\1&3\\end{bmatrix}"
+      )
+    )
+  ),
+  "Version 4" = list(
+    subtitle = "Method selection",
+    emphasis = "Focuses on recognizing resonance, classifying a linear flow, shifting frequency, transforming an integral equation, and testing consistency.",
+    questions = list(
+      mock_question(
+        "Differential equations · 20 marks", "Forced oscillator at resonance",
+        "y''+4y=\\cos(2x)",
+        c(
+          "Solve the homogeneous characteristic equation \\(r^2+4=0\\).",
+          "The forcing duplicates the homogeneous cosine frequency, so the ordinary cosine trial would fail.",
+          "Use the resonant trial \\(y_p=Ax\\sin(2x)\\).",
+          "Substitute to determine \\(A=1/4\\), then combine homogeneous and particular parts."
+        ),
+        "y=C_1\\cos(2x)+C_2\\sin(2x)+\\frac{x}{4}\\sin(2x)"
+      ),
+      mock_question(
+        "Differential equations · 20 marks", "Eigenvalue classification of a flow",
+        "\\mathbf{x}'=\\begin{bmatrix}3&1\\\\-2&0\\end{bmatrix}\\mathbf{x}",
+        c(
+          "Compute \\(\\det(A-\\lambda I)=\\lambda^2-3\\lambda+2\\).",
+          "Factor the polynomial to obtain \\(\\lambda=1\\) and \\(\\lambda=2\\).",
+          "Both eigenvalues are real, positive, and distinct.",
+          "Translate those three facts into the phase-portrait classification and stability."
+        ),
+        "\\text{The origin is an unstable node.}"
+      ),
+      mock_question(
+        "Laplace transforms · 20 marks", "Recognize a frequency shift",
+        "\\mathcal{L}^{-1}\\!\\left\\{\\frac{s+1}{s^2+2s+10}\\right\\}",
+        c(
+          "Complete the square: \\(s^2+2s+10=(s+1)^2+9\\).",
+          "The numerator is already the matching shifted variable \\(s+1\\).",
+          "Match the fraction to the cosine transform with angular frequency \\(3\\).",
+          "Use the shift \\(s\\mapsto s+1\\) to supply the exponential factor."
+        ),
+        "f(t)=e^{-t}\\cos(3t)"
+      ),
+      mock_question(
+        "Laplace transforms · 20 marks", "Integral equation with an exponential kernel",
+        "y(t)-\\int_0^t e^{-(t-\\tau)}y(\\tau)\\,d\\tau=1",
+        c(
+          "Recognize the integral as \\(e^{-t}*y(t)\\).",
+          "Transform to get \\(Y-Y/(s+1)=1/s\\).",
+          "Factor \\(Y\\) and simplify \\(1-1/(s+1)=s/(s+1)\\).",
+          "Solve for \\(Y=(s+1)/s^2\\), split it, and invert."
+        ),
+        "y(t)=1+t"
+      ),
+      mock_question(
+        "Linear algebra · 20 marks", "Consistency and a determinant identity",
+        "\\text{(a) }kx+y=1,\\;2x+2y=k.\\qquad \\text{(b) If }A\\in\\mathbb{R}^{3\\times3},\\;\\det\\!\\left(3A^{-1}A^T\\right)",
+        c(
+          "For part (a), compute the coefficient determinant \\(2(k-1)\\).",
+          "When \\(k\\ne1\\), the system has one solution. When \\(k=1\\), compare the two left sides and right sides.",
+          "For part (b), use \\(\\det(3M)=3^3\\det(M)\\) for a three-by-three matrix.",
+          "Then apply \\(\\det(A^{-1})\\det(A^T)=\\det(A)^{-1}\\det(A)=1\\)."
+        ),
+        "\\text{(a) One solution for }k\\ne1;\\;\\text{no solution for }k=1.\\qquad \\text{(b) }27"
+      )
+    )
+  ),
+  "Version 5" = list(
+    subtitle = "Challenge rehearsal",
+    emphasis = "Combines a repeated operator, nonlinear order reduction, partial fractions, an impulse response, and spectral matrix functions.",
+    questions = list(
+      mock_question(
+        "Differential equations · 20 marks", "Repeated operator with matching forcing",
+        "y''+2y'+y=xe^{-x}",
+        c(
+          "Recognize the left side as \\((D+1)^2y\\).",
+          "Set \\(y=e^{-x}v(x)\\); then \\((D+1)^2y=e^{-x}v''\\).",
+          "Cancel \\(e^{-x}\\) to obtain \\(v''=x\\).",
+          "Integrate twice and substitute back."
+        ),
+        "y=e^{-x}\\left(C_1+C_2x+\\frac{x^3}{6}\\right)"
+      ),
+      mock_question(
+        "Differential equations · 20 marks", "Nonlinear equation missing the dependent variable",
+        "y''+(y')^2=0,\\qquad y(0)=0,\\quad y'(0)=1",
+        c(
+          "Let \\(p(x)=y'(x)\\), reducing the equation to \\(p'+p^2=0\\).",
+          "Separate variables: \\(dp/p^2=-dx\\).",
+          "Use \\(p(0)=1\\) to obtain \\(p=1/(x+1)\\).",
+          "Integrate once more and use \\(y(0)=0\\)."
+        ),
+        "y(x)=\\ln(x+1)"
+      ),
+      mock_question(
+        "Laplace transforms · 20 marks", "Inverse transform and convolution structure",
+        "\\mathcal{L}^{-1}\\!\\left\\{\\frac{1}{s^2(s+2)}\\right\\}",
+        c(
+          "Recognize the product \\((1/s^2)(1/(s+2))\\) as the transform of \\(t*e^{-2t}\\).",
+          "For a direct calculation, write \\(1/[s^2(s+2)]=A/s+B/s^2+C/(s+2)\\).",
+          "Solve for \\(A=-1/4\\), \\(B=1/2\\), and \\(C=1/4\\).",
+          "Invert the three standard transform pairs."
+        ),
+        "f(t)=\\frac{t}{2}-\\frac14+\\frac14e^{-2t}"
+      ),
+      mock_question(
+        "Laplace transforms · 20 marks", "Zero-state response to a delayed impulse",
+        "y''+y=\\delta\\!\\left(t-\\frac{\\pi}{2}\\right),\\qquad y(0)=0,\\quad y'(0)=0",
+        c(
+          "Transform the equation to obtain \\((s^2+1)Y=e^{-\\pi s/2}\\).",
+          "The undelayed inverse of \\(1/(s^2+1)\\) is \\(\\sin t\\).",
+          "Apply a delay of \\(\\pi/2\\).",
+          "Multiply the delayed response by the matching unit step."
+        ),
+        "y(t)=\\sin\\!\\left(t-\\frac{\\pi}{2}\\right)u\\!\\left(t-\\frac{\\pi}{2}\\right)"
+      ),
+      mock_question(
+        "Linear algebra · 20 marks", "A matrix function from spectral data",
+        "A=\\begin{bmatrix}13&12\\\\12&13\\end{bmatrix},\\qquad \\text{find the principal }A^{1/2}",
+        c(
+          "Use the symmetric eigen-directions \\((1,1)^T\\) and \\((1,-1)^T\\).",
+          "Their eigenvalues are \\(25\\) and \\(1\\).",
+          "Take the principal square roots \\(5\\) and \\(1\\).",
+          "Reconstruct the matrix with the same orthonormal eigenvectors."
+        ),
+        "A^{1/2}=\\begin{bmatrix}3&2\\\\2&3\\end{bmatrix}"
+      )
+    )
+  )
+)
+
+mock_exam_question_ui <- function(question, number) {
+  div(
+    class = "mock-question",
+    div(
+      class = "mock-question-heading",
+      div(
+        span(class = "mock-question-number", sprintf("Question %d", number)),
+        span(class = "mock-question-topic", question$topic)
+      ),
+      span(class = "mock-question-marks", "20 marks")
+    ),
+    h3(question$title),
+    math_block(question$prompt, paste("Mock exam question", number)),
+    tags$details(
+      class = "solution-disclosure",
+      tags$summary("Reveal step-by-step solution hint"),
+      div(
+        class = "solution-body",
+        div(class = "eyebrow", "Solve this problem step by step"),
+        tags$ol(
+          class = "learning-path",
+          lapply(question$steps, function(step) tags$li(withMathJax(HTML(step))))
+        ),
+        tags$h4("Final answer"),
+        math_block(question$answer, paste("Final answer for mock exam question", number))
+      )
+    )
+  )
+}
+
 source_prompt_story <- list(
   list(
     phase = "01 · Foundation", title = "Build the first Laplace lab",
@@ -342,6 +687,13 @@ source_prompt_story <- list(
       "Dark Mode should use a black-and-blue colour scheme, not gold."
     ),
     outcome = "Created a switchable black-and-blue Dark Mode and a bright classic-Windows interface with faux Internet Explorer chrome, while preserving the same pages, controls, and navigation state."
+  ),
+  list(
+    phase = "15 · Exam simulation", title = "Generate five full practice finals",
+    prompts = c(
+      "Under the Exam Practice page, make a subpage called Mockup Exam with five predicted versions. Put a step-by-step solution hint under every question, hidden until the user clicks."
+    ),
+    outcome = "Added five newly written 100-mark mock exams modeled on recurring 2020–2025 patterns, with 25 questions and a native click-to-reveal solution guide beneath every problem."
   )
 )
 
@@ -367,8 +719,8 @@ source_prompts_page <- function() {
       ),
       div(
         class = "prompt-stats",
-        div(strong("14"), span("build milestones")),
-        div(strong("33"), span("source requests reviewed")),
+        div(strong("15"), span("build milestones")),
+        div(strong("34"), span("source requests reviewed")),
         div(strong("2020–2025"), span("finals represented"))
       )
     ),
@@ -459,6 +811,7 @@ ui <- fluidPage(
       #differential_navigation::before,#differential_navigation::after,
       #linear_algebra_navigation::before,#linear_algebra_navigation::after,
       #reference_navigation::before,#reference_navigation::after,
+      #exam_navigation::before,#exam_navigation::after,
       #engineering_navigation::before,#engineering_navigation::after { display:none; content:none; }
       #main_navigation>li { float:none; margin:0; }
       #main_navigation>li>a { display:flex; min-height:52px; align-items:center; justify-content:center;
@@ -467,20 +820,21 @@ ui <- fluidPage(
       #main_navigation>li.active>a,#main_navigation>li.active>a:hover,#main_navigation>li>a:hover,
       #main_navigation>li>a:focus { color:#eef6ff; background:linear-gradient(145deg,var(--wine),#0a2036);
         border-color:rgba(77,163,255,.78)!important; box-shadow:inset 0 0 0 1px rgba(185,220,255,.12); }
-      #laplace_navigation,#differential_navigation,#linear_algebra_navigation,#reference_navigation {
+      #laplace_navigation,#differential_navigation,#linear_algebra_navigation,#reference_navigation,
+      #exam_navigation {
         display:flex; flex-wrap:wrap; gap:8px; padding:9px; margin:0 0 22px;
         border:1px solid rgba(31,61,92,.9); border-radius:13px;
         background:linear-gradient(90deg,rgba(8,38,65,.72),rgba(3,11,18,.92)); }
       #laplace_navigation>li,#differential_navigation>li,#linear_algebra_navigation>li,
-      #reference_navigation>li { float:none; flex:1 1 165px; margin:0; }
+      #reference_navigation>li,#exam_navigation>li { float:none; flex:1 1 165px; margin:0; }
       #laplace_navigation>li>a,#differential_navigation>li>a,#linear_algebra_navigation>li>a,
-      #reference_navigation>li>a { display:flex; min-height:48px; align-items:center; justify-content:center;
+      #reference_navigation>li>a,#exam_navigation>li>a { display:flex; min-height:48px; align-items:center; justify-content:center;
         padding:9px 12px; color:var(--muted); text-align:center; line-height:1.25;
         border:1px solid rgba(31,61,92,.9); border-radius:9px; background:rgba(3,10,16,.62); }
       #laplace_navigation>li.active>a,#differential_navigation>li.active>a,
-      #linear_algebra_navigation>li.active>a,#reference_navigation>li.active>a,
+      #linear_algebra_navigation>li.active>a,#reference_navigation>li.active>a,#exam_navigation>li.active>a,
       #laplace_navigation>li>a:hover,#differential_navigation>li>a:hover,
-      #linear_algebra_navigation>li>a:hover,#reference_navigation>li>a:hover {
+      #linear_algebra_navigation>li>a:hover,#reference_navigation>li>a:hover,#exam_navigation>li>a:hover {
         color:#eef6ff; border-color:var(--cyan); background:linear-gradient(145deg,#0f2a44,#071625);
         box-shadow:inset 0 -2px 0 var(--cyan); }
       #engineering_navigation { display:flex; flex-wrap:wrap; gap:8px; padding:7px;
@@ -578,6 +932,45 @@ ui <- fluidPage(
       .theme-toggle:hover,.theme-toggle:focus { color:#020a12; background:var(--gold-soft);
         outline:2px solid rgba(185,220,255,.28); outline-offset:2px; }
       .legacy-browser-chrome { display:none; }
+      .mock-exam-intro { overflow:hidden; }
+      .mock-exam-instructions { display:grid; gap:5px; margin:18px 0; padding:14px 16px;
+        color:#c9ddf0; background:#071b2d; border:1px solid rgba(77,163,255,.38);
+        border-left:4px solid var(--cyan); border-radius:9px; line-height:1.55; }
+      .mock-exam-instructions strong { color:#eef6ff; }
+      .mock-exam-banner { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:20px;
+        align-items:center; margin:0 0 18px; padding:18px 20px; color:#d8e8f7;
+        background:linear-gradient(120deg,#0b2945,#06101a); border:1px solid #27557c;
+        border-radius:13px; }
+      .mock-exam-banner h3 { margin:4px 0 5px; color:#eef6ff; }
+      .mock-exam-banner p { margin:0; color:#b8cee1; }
+      .mock-exam-balance { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:7px;
+        max-width:360px; }
+      .mock-exam-balance span,.mock-question-marks { padding:6px 9px; color:#b9dcff;
+        background:#061625; border:1px solid #2c6090; border-radius:999px; font-size:11px;
+        font-weight:750; white-space:nowrap; }
+      .mock-question { position:relative; margin:0 0 18px; padding:21px;
+        background:linear-gradient(145deg,rgba(9,18,28,.98),rgba(3,8,13,.98));
+        border:1px solid #1d3c58; border-radius:14px; box-shadow:0 12px 32px rgba(0,0,0,.28); }
+      .mock-question::before { content:''; position:absolute; top:0; bottom:0; left:0;
+        width:4px; background:linear-gradient(var(--cyan),var(--violet)); border-radius:14px 0 0 14px; }
+      .mock-question-heading { display:flex; align-items:flex-start; justify-content:space-between;
+        gap:14px; margin-bottom:10px; }
+      .mock-question-number { display:block; color:var(--cyan); font-size:12px; font-weight:800;
+        letter-spacing:.1em; text-transform:uppercase; }
+      .mock-question-topic { display:block; margin-top:4px; color:var(--muted); font-size:12px; }
+      .mock-question h3 { margin:0 0 13px; color:#eef6ff; font-size:19px; }
+      .mock-question>.formula { margin-bottom:16px; }
+      .solution-disclosure { overflow:hidden; border:1px solid #29465f; border-radius:10px;
+        background:#050a0f; }
+      .solution-disclosure summary { padding:12px 14px; color:#b9dcff; cursor:pointer;
+        font-weight:750; user-select:none; }
+      .solution-disclosure summary:hover,.solution-disclosure summary:focus {
+        color:#fff; background:#0b2945; }
+      .solution-disclosure[open] summary { color:#fff; background:#0b2945;
+        border-bottom:1px solid #29465f; }
+      .solution-body { padding:16px 18px 18px; }
+      .solution-body .learning-path { margin:10px 0 17px; }
+      .solution-body h4 { margin:5px 0 10px; color:#eef6ff; }
       .source-prompts-page { max-width:1100px; margin:0 auto; }
       .prompt-intro { overflow:hidden; }
       .prompt-note { display:grid; gap:5px; margin:18px 0; padding:14px 16px;
@@ -654,24 +1047,28 @@ ui <- fluidPage(
       body:not(.legacy-mode) #laplace_navigation,
       body:not(.legacy-mode) #differential_navigation,
       body:not(.legacy-mode) #linear_algebra_navigation,
-      body:not(.legacy-mode) #reference_navigation {
+      body:not(.legacy-mode) #reference_navigation,
+      body:not(.legacy-mode) #exam_navigation {
         background:linear-gradient(90deg,#08080a,#030304);
         border-color:rgba(77,163,255,.28);
       }
       body:not(.legacy-mode) #laplace_navigation>li>a,
       body:not(.legacy-mode) #differential_navigation>li>a,
       body:not(.legacy-mode) #linear_algebra_navigation>li>a,
-      body:not(.legacy-mode) #reference_navigation>li>a {
+      body:not(.legacy-mode) #reference_navigation>li>a,
+      body:not(.legacy-mode) #exam_navigation>li>a {
         background:#050506; border-color:#312b22;
       }
       body:not(.legacy-mode) #laplace_navigation>li.active>a,
       body:not(.legacy-mode) #differential_navigation>li.active>a,
       body:not(.legacy-mode) #linear_algebra_navigation>li.active>a,
       body:not(.legacy-mode) #reference_navigation>li.active>a,
+      body:not(.legacy-mode) #exam_navigation>li.active>a,
       body:not(.legacy-mode) #laplace_navigation>li>a:hover,
       body:not(.legacy-mode) #differential_navigation>li>a:hover,
       body:not(.legacy-mode) #linear_algebra_navigation>li>a:hover,
-      body:not(.legacy-mode) #reference_navigation>li>a:hover {
+      body:not(.legacy-mode) #reference_navigation>li>a:hover,
+      body:not(.legacy-mode) #exam_navigation>li>a:hover {
         background:linear-gradient(145deg,#17171a,#080809);
       }
       body:not(.legacy-mode) #engineering_navigation>li.active>a,
@@ -750,17 +1147,21 @@ ui <- fluidPage(
       .legacy-mode #main_navigation>li>a:hover,.legacy-mode #main_navigation>li>a:focus {
         color:#fff; background:#000080; border:2px inset #fff!important; box-shadow:none; }
       .legacy-mode #laplace_navigation,.legacy-mode #differential_navigation,
-      .legacy-mode #linear_algebra_navigation,.legacy-mode #reference_navigation {
+      .legacy-mode #linear_algebra_navigation,.legacy-mode #reference_navigation,
+      .legacy-mode #exam_navigation {
         gap:3px; padding:4px; margin:0 0 10px; border:2px groove #fff; border-radius:0;
         background:#c0c0c0; }
       .legacy-mode #laplace_navigation>li>a,.legacy-mode #differential_navigation>li>a,
-      .legacy-mode #linear_algebra_navigation>li>a,.legacy-mode #reference_navigation>li>a {
+      .legacy-mode #linear_algebra_navigation>li>a,.legacy-mode #reference_navigation>li>a,
+      .legacy-mode #exam_navigation>li>a {
         min-height:40px; padding:6px 7px; color:#000; border:2px outset #fff;
         border-radius:0; background:#c0c0c0; font-family:Arial,sans-serif; text-decoration:none; }
       .legacy-mode #laplace_navigation>li.active>a,.legacy-mode #differential_navigation>li.active>a,
       .legacy-mode #linear_algebra_navigation>li.active>a,.legacy-mode #reference_navigation>li.active>a,
+      .legacy-mode #exam_navigation>li.active>a,
       .legacy-mode #laplace_navigation>li>a:hover,.legacy-mode #differential_navigation>li>a:hover,
-      .legacy-mode #linear_algebra_navigation>li>a:hover,.legacy-mode #reference_navigation>li>a:hover {
+      .legacy-mode #linear_algebra_navigation>li>a:hover,.legacy-mode #reference_navigation>li>a:hover,
+      .legacy-mode #exam_navigation>li>a:hover {
         color:#fff; background:#000080; border:2px inset #fff; box-shadow:none; }
       .legacy-mode #engineering_navigation { gap:3px; padding:3px; margin-bottom:9px;
         background:#c0c0c0; border:2px groove #fff; }
@@ -810,6 +1211,28 @@ ui <- fluidPage(
       .legacy-mode code { color:#000; background:#ffffe1; border:1px solid #808080; }
       .legacy-mode a,.legacy-mode .source-link { color:#0000ee; text-decoration:underline; }
       .legacy-mode .plot-wrap { background:#fff; }
+      .legacy-mode .mock-exam-instructions { color:#000; background:#ffffe1;
+        border:2px inset #fff; border-left:5px solid #000080; border-radius:0; }
+      .legacy-mode .mock-exam-instructions strong { color:#000080; }
+      .legacy-mode .mock-exam-banner { color:#000; background:#ffffe1;
+        border:2px ridge #c0c0c0; border-radius:0; }
+      .legacy-mode .mock-exam-banner h3 { color:#000080; }
+      .legacy-mode .mock-exam-banner p { color:#000; }
+      .legacy-mode .mock-exam-balance span,.legacy-mode .mock-question-marks {
+        color:#000; background:#c0c0c0; border:2px outset #fff; border-radius:0; }
+      .legacy-mode .mock-question { color:#000; background:#fff; border:2px ridge #c0c0c0;
+        border-radius:0; box-shadow:none; }
+      .legacy-mode .mock-question::before { display:none; }
+      .legacy-mode .mock-question-number,.legacy-mode .mock-question h3 { color:#000080; }
+      .legacy-mode .mock-question-topic { color:#444; }
+      .legacy-mode .solution-disclosure { background:#fff; border:2px inset #fff; border-radius:0; }
+      .legacy-mode .solution-disclosure summary { color:#000080; background:#c0c0c0;
+        font-family:Arial,sans-serif; }
+      .legacy-mode .solution-disclosure summary:hover,
+      .legacy-mode .solution-disclosure summary:focus,
+      .legacy-mode .solution-disclosure[open] summary { color:#fff; background:#000080;
+        border-bottom:2px groove #fff; }
+      .legacy-mode .solution-body h4 { color:#000080; }
       .legacy-mode .prompt-note { color:#000; background:#ffffe1; border:2px inset #fff;
         border-left:5px solid #000080; border-radius:0; }
       .legacy-mode .prompt-note strong { color:#000080; }
@@ -844,12 +1267,14 @@ ui <- fluidPage(
         .module-heading{grid-template-columns:1fr;} .module-seal{width:46px;height:46px;}
         .theme-toggle{position:static;margin-top:16px;} .legacy-mode h1{max-width:none;}
         .legacy-mode .theme-toggle{position:static;} .prompt-stats{grid-template-columns:1fr;}
+        .mock-exam-banner{grid-template-columns:1fr;}.mock-exam-balance{justify-content:flex-start;max-width:none;}
+        .mock-question-heading{align-items:flex-start;}.mock-question{padding:17px 15px;}
         .chat-message{grid-template-columns:34px minmax(0,1fr);padding:16px 14px;}
         .chat-window-bar{grid-template-columns:auto 1fr;}.chat-window-status{display:none;}
         .prompt-phase{padding:9px 14px;} }
       @media(max-width:560px){ #main_navigation{grid-template-columns:repeat(2,minmax(0,1fr));}
         #laplace_navigation>li,#differential_navigation>li,#linear_algebra_navigation>li,
-        #reference_navigation>li{flex-basis:100%;}
+        #reference_navigation>li,#exam_navigation>li{flex-basis:100%;}
         .legacy-address{grid-template-columns:auto 1fr;}.legacy-go{display:none;} }
     "))
     ,
@@ -1954,63 +2379,87 @@ ui <- fluidPage(
               )
             ),
             tabPanel("Exam Practice", value = "exam_coach",
-              div(class = "card",
-                div(class = "eyebrow", "Based on six finals"),
-                h2("2020–2025 exam roadmap"),
-                tags$p(
-                  "Use this page to prioritize recurring skills. The ranking reflects frequency and mark weight ",
-                  "across the supplied papers, not a guarantee of the next exam."
-                )
-              ),
-              div(class = "metric-row",
-                div(class = "metric", span("Priority 1"), strong("Linear algebra")),
-                div(class = "metric", span("Priority 2"), strong("Laplace transforms")),
-                div(class = "metric", span("Priority 3"), strong("Differential equations"))
-              ),
-              fluidRow(
-                column(7,
+              tabsetPanel(id = "exam_navigation", type = "pills",
+                tabPanel("Roadmap & Practice", value = "exam_roadmap",
                   div(class = "card",
-                    h3("Recurring mastery checklist"),
+                    div(class = "eyebrow", "Based on six finals"),
+                    h2("2020–2025 exam roadmap"),
+                    tags$p(
+                      "Use this page to prioritize recurring skills. The ranking reflects frequency and mark weight ",
+                      "across the supplied papers, not a guarantee of the next exam."
+                    )
+                  ),
+                  div(class = "metric-row",
+                    div(class = "metric", span("Priority 1"), strong("Linear algebra")),
+                    div(class = "metric", span("Priority 2"), strong("Laplace transforms")),
+                    div(class = "metric", span("Priority 3"), strong("Differential equations"))
+                  ),
+                  fluidRow(
+                    column(7,
+                      div(class = "card",
+                        h3("Recurring mastery checklist"),
+                        tags$table(
+                          tags$thead(tags$tr(tags$th("Skill"), tags$th("Exam signal"), tags$th("Practice target"))),
+                          tags$tbody(
+                            tags$tr(tags$td("Eigenpairs and diagonalization"), tags$td("Every year"), tags$td("3 complete matrices")),
+                            tags$tr(tags$td("Determinants, inverses, singularity"), tags$td("Every year"), tags$td("10 short identities")),
+                            tags$tr(tags$td("Direct and inverse Laplace transforms"), tags$td("Every year"), tags$td("8 mixed transforms")),
+                            tags$tr(tags$td("Unit steps, impulses, convolution"), tags$td("Frequent"), tags$td("2 of each type")),
+                            tags$tr(tags$td("ODE classification and solution"), tags$td("Increasing since 2022"), tags$td("1 linear, 1 Euler, 1 nonlinear"))
+                          )
+                        )
+                      )
+                    ),
+                    column(5,
+                      div(class = "card",
+                        h3("Practice generator"),
+                        selectInput("practice_topic", "Topic",
+                          choices = c("Laplace transforms", "Differential equations", "Linear algebra")),
+                        selectInput("practice_level", "Difficulty",
+                          choices = c("Foundation", "Exam-style", "Challenge")),
+                        actionButton("new_practice", "Generate a new prompt", class = "btn-primary"),
+                        hr(),
+                        uiOutput("practice_prompt"),
+                        actionButton("show_solution", "Show solution guide"),
+                        conditionalPanel("input.show_solution % 2 == 1", uiOutput("practice_solution"))
+                      )
+                    )
+                  ),
+                  div(class = "card",
+                    h3("Coverage by year"),
                     tags$table(
-                      tags$thead(tags$tr(tags$th("Skill"), tags$th("Exam signal"), tags$th("Practice target"))),
+                      tags$thead(tags$tr(tags$th("Final"), tags$th("Differential equations"),
+                                        tags$th("Laplace"), tags$th("Linear algebra"))),
                       tags$tbody(
-                        tags$tr(tags$td("Eigenpairs and diagonalization"), tags$td("Every year"), tags$td("3 complete matrices")),
-                        tags$tr(tags$td("Determinants, inverses, singularity"), tags$td("Every year"), tags$td("10 short identities")),
-                        tags$tr(tags$td("Direct and inverse Laplace transforms"), tags$td("Every year"), tags$td("8 mixed transforms")),
-                        tags$tr(tags$td("Unit steps, impulses, convolution"), tags$td("Frequent"), tags$td("2 of each type")),
-                        tags$tr(tags$td("ODE classification and solution"), tags$td("Increasing since 2022"), tags$td("1 linear, 1 Euler, 1 nonlinear"))
+                        tags$tr(tags$td("2020"), tags$td("IVPs"), tags$td("Transforms, convolution, integral equations"), tags$td("Systems, determinants, eigenpairs")),
+                        tags$tr(tags$td("2021"), tags$td("Coupled system, impulse IVP"), tags$td("Properties, shifts, integral equations"), tags$td("Diagonalization, roots, determinant rules")),
+                        tags$tr(tags$td("2022"), tags$td("Nonlinear ODEs, system"), tags$td("Transforms, shifts, impulse"), tags$td("Orthogonal eigenvectors, diagonalization")),
+                        tags$tr(tags$td("2023"), tags$td("System and impulse IVP"), tags$td("Transforms, convolution, shifts"), tags$td("Eigenpairs, powers, singularity")),
+                        tags$tr(tags$td("2024"), tags$td("Linear and nonlinear ODEs"), tags$td("Inverse, properties, convolution"), tags$td("Determinants, diagonalization, matrix roots")),
+                        tags$tr(tags$td("2025"), tags$td("Cauchy-Euler and nonlinear ODE"), tags$td("Transforms, inverse, integral equation"), tags$td("Systems, inverse, eigenvalues, diagonalization"))
                       )
                     )
                   )
                 ),
-                column(5,
-                  div(class = "card",
-                    h3("Practice generator"),
-                    selectInput("practice_topic", "Topic",
-                      choices = c("Laplace transforms", "Differential equations", "Linear algebra")),
-                    selectInput("practice_level", "Difficulty",
-                      choices = c("Foundation", "Exam-style", "Challenge")),
-                    actionButton("new_practice", "Generate a new prompt", class = "btn-primary"),
-                    hr(),
-                    uiOutput("practice_prompt"),
-                    actionButton("show_solution", "Show solution guide"),
-                    conditionalPanel("input.show_solution % 2 == 1", uiOutput("practice_solution"))
-                  )
-                )
-              ),
-              div(class = "card",
-                h3("Coverage by year"),
-                tags$table(
-                  tags$thead(tags$tr(tags$th("Final"), tags$th("Differential equations"),
-                                    tags$th("Laplace"), tags$th("Linear algebra"))),
-                  tags$tbody(
-                    tags$tr(tags$td("2020"), tags$td("IVPs"), tags$td("Transforms, convolution, integral equations"), tags$td("Systems, determinants, eigenpairs")),
-                    tags$tr(tags$td("2021"), tags$td("Coupled system, impulse IVP"), tags$td("Properties, shifts, integral equations"), tags$td("Diagonalization, roots, determinant rules")),
-                    tags$tr(tags$td("2022"), tags$td("Nonlinear ODEs, system"), tags$td("Transforms, shifts, impulse"), tags$td("Orthogonal eigenvectors, diagonalization")),
-                    tags$tr(tags$td("2023"), tags$td("System and impulse IVP"), tags$td("Transforms, convolution, shifts"), tags$td("Eigenpairs, powers, singularity")),
-                    tags$tr(tags$td("2024"), tags$td("Linear and nonlinear ODEs"), tags$td("Inverse, properties, convolution"), tags$td("Determinants, diagonalization, matrix roots")),
-                    tags$tr(tags$td("2025"), tags$td("Cauchy-Euler and nonlinear ODE"), tags$td("Transforms, inverse, integral equation"), tags$td("Systems, inverse, eigenvalues, diagonalization"))
-                  )
+                tabPanel("Mockup Exam", value = "mock_exam",
+                  div(class = "card mock-exam-intro",
+                    div(class = "eyebrow", "Five predicted practice versions"),
+                    h2("Mockup exam"),
+                    tags$p(
+                      "Each version is a newly written 100-mark practice final based on the recurring methods in ",
+                      "the supplied 2020–2025 papers. It is a study prediction, not a forecast or reproduction of ",
+                      "the next official exam."
+                    ),
+                    div(class = "mock-exam-instructions",
+                      strong("Recommended attempt"),
+                      span("Allow about 150 minutes, work without revealing hints, then use each solution disclosure to mark your method and final result.")
+                    ),
+                    selectInput(
+                      "mock_exam_version", "Choose a mock exam version",
+                      choices = names(mock_exam_bank), selected = "Version 1"
+                    )
+                  ),
+                  uiOutput("mock_exam_questions")
                 )
               )
             ),
@@ -2968,6 +3417,30 @@ server <- function(input, output, session) {
       tags$ol(class = "learning-path", lapply(steps, tags$li)),
       tags$h4("Final answer"),
       math_block(math_bank[[index]][2], "Final answer.")
+    )
+  })
+
+  output$mock_exam_questions <- renderUI({
+    exam <- mock_exam_bank[[input$mock_exam_version]]
+    tagList(
+      div(
+        class = "mock-exam-banner",
+        div(
+          div(class = "eyebrow", paste(input$mock_exam_version, "·", exam$subtitle)),
+          h3("Five questions · 100 marks"),
+          tags$p(exam$emphasis)
+        ),
+        div(
+          class = "mock-exam-balance",
+          span("Differential equations"),
+          span("Laplace transforms"),
+          span("Linear algebra")
+        )
+      ),
+      lapply(
+        seq_along(exam$questions),
+        function(index) mock_exam_question_ui(exam$questions[[index]], index)
+      )
     )
   })
 }
