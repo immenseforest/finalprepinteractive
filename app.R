@@ -3412,7 +3412,7 @@ ui <- fluidPage(
                         sliderInput(
                           "study_hours",
                           "Focused hours available this week",
-                          min = 2, max = 30, value = 10, step = 1
+                          min = 2, max = 30, value = 10, step = 1, ticks = FALSE
                         ),
                         uiOutput("study_budget"),
                         tags$p(
