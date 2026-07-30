@@ -338,7 +338,8 @@ catalog_tutorial_match <- function(title) {
 
 mock_question <- function(topic, title, prompt, steps, answer) {
   list(
-    topic = topic, title = title, prompt = prompt, steps = steps, answer = answer,
+    topic = sub(" · 20 marks", "", topic, fixed = TRUE),
+    title = title, prompt = prompt, steps = steps, answer = answer,
     tutorial = catalog_tutorial_match(title)
   )
 }
@@ -353,14 +354,16 @@ mock_exam_bank <- list(
     questions = list(
       mock_question(
         "Differential equations · 20 marks", "Constant-coefficient initial-value problem",
-        "y''+4y'+3y=0,\\qquad y(0)=2,\\quad y'(0)=-4",
+        "\\text{(a) }y''+4y'+3y=0,\\;y(0)=2,\\;y'(0)=-4.\\qquad \\text{(b) Construct the lowest-order ODE for }y=C_1+C_2e^{-2x}.",
         c(
-          "Form the characteristic equation \\(r^2+4r+3=0\\).",
+          "For part (a), form the characteristic equation \\(r^2+4r+3=0\\).",
           "Factor it to obtain the two modes associated with \\(r=-1\\) and \\(r=-3\\).",
           "Write \\(y=C_1e^{-x}+C_2e^{-3x}\\), then apply both initial conditions.",
-          "Solve \\(C_1+C_2=2\\) and \\(-C_1-3C_2=-4\\)."
+          "Solve \\(C_1+C_2=2\\) and \\(-C_1-3C_2=-4\\).",
+          "For part (b), read the modes \\(1=e^{0x}\\) and \\(e^{-2x}\\), so the characteristic roots are \\(0\\) and \\(-2\\).",
+          "Form \\(r(r+2)=0\\) and replace \\(r\\) by the differential operator."
         ),
-        "y(x)=e^{-x}+e^{-3x}"
+        "\\text{(a) }y(x)=e^{-x}+e^{-3x}.\\qquad \\text{(b) }y''+2y'=0."
       ),
       mock_question(
         "Laplace transforms · 20 marks", "Inverse transform by completing the square",
@@ -414,14 +417,16 @@ mock_exam_bank <- list(
     questions = list(
       mock_question(
         "Differential equations · 20 marks", "Reduce the order of a nonlinear equation",
-        "y''=yy',\\qquad y(0)=0,\\quad y'(0)=1",
+        "\\text{(a) }y''=yy',\\;y(0)=0,\\;y'(0)=1.\\qquad \\text{(b) Construct the ODE for }y=e^x(C_1\\cos 2x+C_2\\sin 2x).",
         c(
-          "Because \\(x\\) is absent, set \\(v(y)=y'\\), so \\(y''=v\\,dv/dy\\).",
+          "For part (a), because \\(x\\) is absent, set \\(v(y)=y'\\), so \\(y''=v\\,dv/dy\\).",
           "Substitute to obtain \\(v\\,dv/dy=yv\\), then use the nonzero branch through the initial data.",
           "Integrate \\(dv/dy=y\\) and use \\(v(0)=1\\) to get \\(y'=1+y^2/2\\).",
-          "Separate variables, integrate, and use \\(y(0)=0\\)."
+          "Separate variables, integrate, and use \\(y(0)=0\\).",
+          "For part (b), the exponential-trigonometric modes correspond to roots \\(1\\pm2i\\).",
+          "Build \\((r-1)^2+4=r^2-2r+5\\), then replace \\(r\\) by the differential operator."
         ),
-        "y(x)=\\sqrt{2}\\tan\\!\\left(\\frac{x}{\\sqrt{2}}\\right)"
+        "\\text{(a) }y(x)=\\sqrt{2}\\tan\\!\\left(\\frac{x}{\\sqrt{2}}\\right).\\qquad \\text{(b) }y''-2y'+5y=0."
       ),
       mock_question(
         "Laplace transforms · 20 marks", "Solve a convolution integral equation",
@@ -519,14 +524,15 @@ mock_exam_bank <- list(
       ),
       mock_question(
         "Linear algebra · 20 marks", "Principal square root of a symmetric matrix",
-        "A=\\begin{bmatrix}10&6\\\\6&10\\end{bmatrix},\\qquad \\text{find }A^{1/2}",
+        "A=\\begin{bmatrix}10&6\\\\6&10\\end{bmatrix}.\\quad \\text{(a) Solve }A\\mathbf{x}=\\begin{bmatrix}16\\\\16\\end{bmatrix}.\\;\\text{(b) Diagonalize }A.\\;\\text{(c) Find }A^{1/2}.\\;\\text{(d) Evaluate }\\det(2A^{-1}A^T).",
         c(
-          "Find the eigenvalues along \\((1,1)^T\\) and \\((1,-1)^T\\): they are \\(16\\) and \\(4\\).",
-          "Use normalized eigenvectors to form an orthogonal matrix \\(P\\).",
-          "Take the positive square roots of the eigenvalues to obtain \\(\\operatorname{diag}(4,2)\\).",
-          "Reconstruct the principal root as \\(P\\operatorname{diag}(4,2)P^T\\)."
+          "For part (a), row-reduce the augmented system; the right side is the row-sum direction, giving \\(\\mathbf{x}=(1,1)^T\\).",
+          "For part (b), find the eigenvalues along \\((1,1)^T\\) and \\((1,-1)^T\\): they are \\(16\\) and \\(4\\).",
+          "Normalize those eigenvectors to form an orthogonal matrix \\(P\\), so \\(A=P\\operatorname{diag}(16,4)P^T\\).",
+          "For part (c), take the positive square roots of the eigenvalues and reconstruct \\(P\\operatorname{diag}(4,2)P^T\\).",
+          "For part (d), use \\(\\det(2M)=2^2\\det(M)\\) and \\(\\det(A^{-1})\\det(A^T)=1\\)."
         ),
-        "A^{1/2}=\\begin{bmatrix}3&1\\\\1&3\\end{bmatrix}"
+        "\\text{(a) }\\mathbf{x}=\\begin{bmatrix}1\\\\1\\end{bmatrix}.\\quad \\text{(b) }A=P\\operatorname{diag}(16,4)P^T,\\;P=\\frac1{\\sqrt2}\\begin{bmatrix}1&1\\\\1&-1\\end{bmatrix}.\\quad \\text{(c) }A^{1/2}=\\begin{bmatrix}3&1\\\\1&3\\end{bmatrix}.\\quad \\text{(d) }4."
       )
     )
   ),
@@ -580,14 +586,16 @@ mock_exam_bank <- list(
       ),
       mock_question(
         "Linear algebra · 20 marks", "Consistency and a determinant identity",
-        "\\text{(a) }kx+y=1,\\;2x+2y=k.\\qquad \\text{(b) If }A\\in\\mathbb{R}^{3\\times3},\\;\\det\\!\\left(3A^{-1}A^T\\right)",
+        "\\text{(a) }kx+y=1,\\;2x+2y=k.\\quad \\text{(b) If }A\\in\\mathbb{R}^{3\\times3},\\;\\det(3A^{-1}A^T).\\quad \\text{(c) For }B=\\begin{bmatrix}2&1\\\\1&2\\end{bmatrix},\\text{ find its eigenvalues and }B^3.",
         c(
           "For part (a), compute the coefficient determinant \\(2(k-1)\\).",
           "When \\(k\\ne1\\), the system has one solution. When \\(k=1\\), compare the two left sides and right sides.",
           "For part (b), use \\(\\det(3M)=3^3\\det(M)\\) for a three-by-three matrix.",
-          "Then apply \\(\\det(A^{-1})\\det(A^T)=\\det(A)^{-1}\\det(A)=1\\)."
+          "Then apply \\(\\det(A^{-1})\\det(A^T)=\\det(A)^{-1}\\det(A)=1\\).",
+          "For part (c), use the eigen-directions \\((1,1)^T\\) and \\((1,-1)^T\\), with eigenvalues \\(3\\) and \\(1\\).",
+          "Cube the diagonal eigenvalue matrix and reconstruct \\(B^3\\)."
         ),
-        "\\text{(a) One solution for }k\\ne1;\\;\\text{no solution for }k=1.\\qquad \\text{(b) }27"
+        "\\text{(a) One solution for }k\\ne1;\\;\\text{no solution for }k=1.\\quad \\text{(b) }27.\\quad \\text{(c) }\\lambda=3,1;\\;B^3=\\begin{bmatrix}14&13\\\\13&14\\end{bmatrix}."
       )
     )
   ),
@@ -641,18 +649,93 @@ mock_exam_bank <- list(
       ),
       mock_question(
         "Linear algebra · 20 marks", "A matrix function from spectral data",
-        "A=\\begin{bmatrix}13&12\\\\12&13\\end{bmatrix},\\qquad \\text{find the principal }A^{1/2}",
+        "A=\\begin{bmatrix}13&12\\\\12&13\\end{bmatrix}.\\quad \\text{(a) Solve }A\\mathbf{x}=\\begin{bmatrix}25\\\\25\\end{bmatrix}.\\;\\text{(b) Diagonalize }A.\\;\\text{(c) Find the principal }A^{1/2}.\\;\\text{(d) Find }\\det(A)\\text{ and }A^{-1}.",
         c(
-          "Use the symmetric eigen-directions \\((1,1)^T\\) and \\((1,-1)^T\\).",
-          "Their eigenvalues are \\(25\\) and \\(1\\).",
-          "Take the principal square roots \\(5\\) and \\(1\\).",
-          "Reconstruct the matrix with the same orthonormal eigenvectors."
+          "For part (a), the right side lies in the row-sum direction, so solve to obtain \\(\\mathbf{x}=(1,1)^T\\).",
+          "For part (b), use the symmetric eigen-directions \\((1,1)^T\\) and \\((1,-1)^T\\); their eigenvalues are \\(25\\) and \\(1\\).",
+          "Normalize the eigenvectors and write \\(A=P\\operatorname{diag}(25,1)P^T\\).",
+          "For part (c), take the principal square roots \\(5\\) and \\(1\\), then reconstruct with the same eigenvectors.",
+          "For part (d), multiply the eigenvalues for the determinant and use the two-by-two inverse formula."
         ),
-        "A^{1/2}=\\begin{bmatrix}3&2\\\\2&3\\end{bmatrix}"
+        "\\text{(a) }\\mathbf{x}=\\begin{bmatrix}1\\\\1\\end{bmatrix}.\\quad \\text{(b) }A=P\\operatorname{diag}(25,1)P^T.\\quad \\text{(c) }A^{1/2}=\\begin{bmatrix}3&2\\\\2&3\\end{bmatrix}.\\quad \\text{(d) }\\det(A)=25,\\;A^{-1}=\\frac1{25}\\begin{bmatrix}13&-12\\\\-12&13\\end{bmatrix}."
       )
     )
   )
 )
+
+# The five practice papers follow the two most recent supplied exam blueprints.
+# Versions 1-2 use the 2024 split (8/16/26); Versions 3-5 use the 2025 split
+# (11/14/25). A card can represent a group of related official-style subparts,
+# keeping the page readable without flattening the real papers into equal marks.
+mock_exam_blueprints <- list(
+  "Version 1" = list(
+    model = "2024-style blueprint", source = "Topic weights 8 / 16 / 26",
+    sections = c("Differential equations", "Laplace transforms", "Laplace transforms", "Linear algebra", "Linear algebra"),
+    section_totals = c(8, 16, 16, 26, 26),
+    paper_labels = c("Problems 1–2", "Problem 3(a–c)", "Problem 3(d–f)", "Problem 4(a–c)", "Problem 4(d–f)"),
+    marks = c(8, 8, 8, 13, 13)
+  ),
+  "Version 2" = list(
+    model = "2024-style blueprint", source = "Topic weights 8 / 16 / 26",
+    sections = c("Differential equations", "Laplace transforms", "Laplace transforms", "Linear algebra", "Linear algebra"),
+    section_totals = c(8, 16, 16, 26, 26),
+    paper_labels = c("Problems 1–2", "Problem 3(a–c)", "Problem 3(d–f)", "Problem 4(a–c)", "Problem 4(d–f)"),
+    marks = c(8, 8, 8, 13, 13)
+  ),
+  "Version 3" = list(
+    model = "2025-style blueprint", source = "Topic weights 11 / 14 / 25",
+    sections = c("Differential equations", "Differential equations", "Laplace transforms", "Laplace transforms", "Linear algebra"),
+    section_totals = c(11, 11, 14, 14, 25),
+    paper_labels = c("Problem 1", "Problem 2", "Problem 3(a–c)", "Problem 3(d–e)", "Problems 4–6"),
+    marks = c(6, 5, 7, 7, 25)
+  ),
+  "Version 4" = list(
+    model = "2025-style blueprint", source = "Topic weights 11 / 14 / 25",
+    sections = c("Differential equations", "Differential equations", "Laplace transforms", "Laplace transforms", "Linear algebra"),
+    section_totals = c(11, 11, 14, 14, 25),
+    paper_labels = c("Problem 1", "Problem 2", "Problem 3(a–c)", "Problem 3(d–e)", "Problems 4–6"),
+    marks = c(6, 5, 7, 7, 25)
+  ),
+  "Version 5" = list(
+    model = "2025-style blueprint", source = "Topic weights 11 / 14 / 25",
+    sections = c("Differential equations", "Differential equations", "Laplace transforms", "Laplace transforms", "Linear algebra"),
+    section_totals = c(11, 11, 14, 14, 25),
+    paper_labels = c("Problem 1", "Problem 2", "Problem 3(a–c)", "Problem 3(d–e)", "Problems 4–6"),
+    marks = c(6, 5, 7, 7, 25)
+  )
+)
+
+for (version_name in names(mock_exam_bank)) {
+  blueprint <- mock_exam_blueprints[[version_name]]
+  mock_exam_bank[[version_name]]$model <- blueprint$model
+  mock_exam_bank[[version_name]]$source <- blueprint$source
+  for (question_index in seq_along(mock_exam_bank[[version_name]]$questions)) {
+    mock_exam_bank[[version_name]]$questions[[question_index]]$section <-
+      blueprint$sections[[question_index]]
+    mock_exam_bank[[version_name]]$questions[[question_index]]$section_total <-
+      blueprint$section_totals[[question_index]]
+    mock_exam_bank[[version_name]]$questions[[question_index]]$paper_label <-
+      blueprint$paper_labels[[question_index]]
+    mock_exam_bank[[version_name]]$questions[[question_index]]$marks <-
+      blueprint$marks[[question_index]]
+  }
+}
+
+mock_exam_section_ui <- function(section, total_marks) {
+  div(
+    class = "mock-section-divider",
+    div(
+      span(
+        class = "mock-section-label",
+        paste("Topic", match(section, c(
+          "Differential equations", "Laplace transforms", "Linear algebra"
+        )))
+      ),
+      h3(section)
+    ),
+    strong(paste(total_marks, "marks"))
+  )
+}
 
 mock_exam_question_ui <- function(question, number) {
   tutorial <- question$tutorial
@@ -662,10 +745,10 @@ mock_exam_question_ui <- function(question, number) {
     div(
       class = "mock-question-heading",
       div(
-        span(class = "mock-question-number", sprintf("Question %d", number)),
-        span(class = "mock-question-topic", question$topic)
+        span(class = "mock-question-number", question$paper_label),
+        span(class = "mock-question-topic", paste("Practice group", number, "·", question$section))
       ),
-      span(class = "mock-question-marks", "20 marks")
+      span(class = "mock-question-marks", paste(question$marks, "marks"))
     ),
     h3(question$title),
     math_block(question$prompt, paste("Mock exam question", number)),
@@ -819,9 +902,10 @@ source_prompt_story <- list(
     prompts = c(
       "Under the Exam Practice page, make a subpage called Mockup Exam with five predicted versions. Put a step-by-step solution hint under every question, hidden until the user clicks.",
       "I only see Version 1.",
-      "For all mock-exam versions, match each question to a relevant tutorial video from the catalog so the user can easily refresh their knowledge."
+      "For all mock-exam versions, match each question to a relevant tutorial video from the catalog so the user can easily refresh their knowledge.",
+      "Scan the previous years' exam PDFs again and make sure the mockup exams mimic them."
     ),
-    outcome = "Added five newly written 100-mark mock exams modeled on recurring 2020–2025 patterns, with 25 questions and a native click-to-reveal solution guide beneath every problem. Replaced the compact dropdown with five always-visible version buttons and matched every question to its closest lesson in the app's tutorial catalog."
+    outcome = "Added five newly written 50-mark mock exams, re-audited all six supplied papers, and matched the 2024 and 2025 topic weights and section order. Every practice group keeps its native click-to-reveal solution guide and closest tutorial-catalog match."
   )
 )
 
@@ -848,7 +932,7 @@ source_prompts_page <- function() {
       div(
         class = "prompt-stats",
         div(strong("15"), span("build milestones")),
-        div(strong("36"), span("source requests reviewed")),
+        div(strong("37"), span("source requests reviewed")),
         div(strong("2020–2025"), span("finals represented"))
       )
     ),
@@ -1089,6 +1173,20 @@ ui <- fluidPage(
       .mock-exam-balance span,.mock-question-marks { padding:6px 9px; color:#b9dcff;
         background:#061625; border:1px solid #2c6090; border-radius:999px; font-size:11px;
         font-weight:750; white-space:nowrap; }
+      .paper-audit { margin:18px 0; overflow:hidden; border:1px solid #29465f;
+        border-radius:10px; background:#050a0f; }
+      .paper-audit summary { padding:12px 14px; color:#b9dcff; cursor:pointer;
+        font-weight:750; }
+      .paper-audit summary:hover,.paper-audit summary:focus { color:#fff; background:#0b2945; }
+      .paper-audit[open] summary { border-bottom:1px solid #29465f; background:#0b2945; }
+      .paper-audit-table { overflow-x:auto; padding:10px 14px 14px; }
+      .paper-audit table { margin:0; min-width:680px; }
+      .mock-section-divider { display:flex; align-items:end; justify-content:space-between;
+        gap:18px; margin:26px 0 11px; padding:0 3px 10px; border-bottom:1px solid #2c6090; }
+      .mock-section-divider h3 { margin:2px 0 0; color:#eef6ff; font-size:20px; }
+      .mock-section-divider strong { color:#b9dcff; white-space:nowrap; }
+      .mock-section-label { color:var(--cyan); font-size:11px; font-weight:800;
+        letter-spacing:.12em; text-transform:uppercase; }
       .mock-question { position:relative; margin:0 0 18px; padding:21px;
         background:linear-gradient(145deg,rgba(9,18,28,.98),rgba(3,8,13,.98));
         border:1px solid #1d3c58; border-radius:14px; box-shadow:0 12px 32px rgba(0,0,0,.28); }
@@ -1374,6 +1472,15 @@ ui <- fluidPage(
       .legacy-mode .mock-exam-banner p { color:#000; }
       .legacy-mode .mock-exam-balance span,.legacy-mode .mock-question-marks {
         color:#000; background:#c0c0c0; border:2px outset #fff; border-radius:0; }
+      .legacy-mode .paper-audit { color:#000; background:#fff; border:2px inset #fff;
+        border-radius:0; }
+      .legacy-mode .paper-audit summary { color:#000080; background:#c0c0c0; }
+      .legacy-mode .paper-audit summary:hover,.legacy-mode .paper-audit summary:focus,
+      .legacy-mode .paper-audit[open] summary { color:#fff; background:#000080;
+        border-bottom:2px groove #fff; }
+      .legacy-mode .mock-section-divider { border-bottom:3px double #000080; }
+      .legacy-mode .mock-section-divider h3,.legacy-mode .mock-section-divider strong,
+      .legacy-mode .mock-section-label { color:#000080; }
       .legacy-mode .mock-question { color:#000; background:#fff; border:2px ridge #c0c0c0;
         border-radius:0; box-shadow:none; }
       .legacy-mode .mock-question::before { display:none; }
@@ -2603,16 +2710,40 @@ ui <- fluidPage(
                 ),
                 tabPanel("Mockup Exam", value = "mock_exam",
                   div(class = "card mock-exam-intro",
-                    div(class = "eyebrow", "Five predicted practice versions"),
+                    div(class = "eyebrow", "Six-paper audit · five original practice versions"),
                     h2("Mockup exam"),
                     tags$p(
-                      "Each version is a newly written 100-mark practice final based on the recurring methods in ",
-                      "the supplied 2020–2025 papers. It is a study prediction, not a forecast or reproduction of ",
-                      "the next official exam."
+                      "Every supplied 2020–2025 final was re-scanned for section order, major-problem count, ",
+                      "mark weighting, and recurring combinations of methods. These mocks use newly written ",
+                      "problems while closely following the two most recent 50-mark blueprints."
                     ),
                     div(class = "mock-exam-instructions",
-                      strong("Recommended attempt"),
-                      span("Allow about 150 minutes, work without revealing hints, then use each solution disclosure to mark your method and final result.")
+                      strong("Exam-style attempt"),
+                      span(
+                        "Work in one sitting without notes or a calculator, using your course's official time ",
+                        "limit if one is provided. Reveal the solution hints and tutorial matches only while marking."
+                      )
+                    ),
+                    tags$details(
+                      class = "paper-audit",
+                      tags$summary("Show the 2020–2025 paper-structure audit"),
+                      div(
+                        class = "paper-audit-table",
+                        tags$table(
+                          tags$thead(tags$tr(
+                            tags$th("Paper"), tags$th("Major structure"), tags$th("Marks"),
+                            tags$th("Most useful blueprint signal")
+                          )),
+                          tags$tbody(
+                            tags$tr(tags$td("2020"), tags$td("4 major problems"), tags$td("52"), tags$td("Linear algebra carried 28 marks")),
+                            tags$tr(tags$td("2021"), tags$td("3 major problems"), tags$td("51"), tags$td("Large 30-mark linear-algebra block")),
+                            tags$tr(tags$td("2022"), tags$td("4 major problems"), tags$td("49"), tags$td("DE 6 · Laplace/systems 22 · Linear 21")),
+                            tags$tr(tags$td("2023"), tags$td("4 major problems"), tags$td("50"), tags$td("Laplace/systems 27 · Linear 23")),
+                            tags$tr(tags$td("2024"), tags$td("3 named topic sections"), tags$td("50"), tags$td("DE 8 · Laplace 16 · Linear 26")),
+                            tags$tr(tags$td("2025"), tags$td("3 named topic sections"), tags$td("50"), tags$td("DE 11 · Laplace 14 · Linear 25"))
+                          )
+                        )
+                      )
                     ),
                     div(
                       class = "mock-version-picker",
@@ -3586,25 +3717,35 @@ server <- function(input, output, session) {
 
   output$mock_exam_questions <- renderUI({
     exam <- mock_exam_bank[[input$mock_exam_version]]
+    rendered_questions <- list()
+    previous_section <- NULL
+    for (index in seq_along(exam$questions)) {
+      question <- exam$questions[[index]]
+      if (!identical(question$section, previous_section)) {
+        rendered_questions[[length(rendered_questions) + 1]] <-
+          mock_exam_section_ui(question$section, question$section_total)
+        previous_section <- question$section
+      }
+      rendered_questions[[length(rendered_questions) + 1]] <-
+        mock_exam_question_ui(question, index)
+    }
     tagList(
       div(
         class = "mock-exam-banner",
         div(
           div(class = "eyebrow", paste(input$mock_exam_version, "·", exam$subtitle)),
-          h3("Five questions · 100 marks"),
-          tags$p(exam$emphasis)
+          h3("50 marks · weighted like a recent final"),
+          tags$p(exam$emphasis),
+          tags$p(class = "small-note", paste(exam$model, "·", exam$source))
         ),
         div(
           class = "mock-exam-balance",
-          span("Differential equations"),
-          span("Laplace transforms"),
-          span("Linear algebra")
+          span(paste("Differential equations", if (exam$model == "2024-style blueprint") "8" else "11")),
+          span(paste("Laplace transforms", if (exam$model == "2024-style blueprint") "16" else "14")),
+          span(paste("Linear algebra", if (exam$model == "2024-style blueprint") "26" else "25"))
         )
       ),
-      lapply(
-        seq_along(exam$questions),
-        function(index) mock_exam_question_ui(exam$questions[[index]], index)
-      )
+      tagList(rendered_questions)
     )
   })
 }
