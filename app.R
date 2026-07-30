@@ -1937,6 +1937,7 @@ ui <- fluidPage(
       .legacy-mode .hint,.legacy-mode .metric span { color:#444; }
       .legacy-mode .formula,.legacy-mode .metric { color:#000; background:#ffffe1;
         border:2px inset #fff; border-radius:0; }
+      .legacy-mode .metric strong { color:#000080; }
       .legacy-mode .scope-metric,.legacy-mode .scope-callout,
       .legacy-mode .scope-guide-block,.legacy-mode .study-budget>div {
         color:#000; background:#ffffe1; border:2px inset #fff; border-radius:0; }
