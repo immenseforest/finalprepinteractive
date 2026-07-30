@@ -8,7 +8,8 @@ The app includes:
 - Laplace transform explorer, property lab, and engineering applications
 - Differential-equation characteristic-root and phase-portrait labs
 - Linear-system and eigenvalue labs
-- Exam coverage map, mastery checklist, and practice generator
+- Exam coverage map with matrix-size frequencies, difficulty proxies,
+  efficiency stop rules, a study-time allocator, and a practice generator
 - Five 50-mark mock finals with verified answers, displayed algebra, and tutorial matches
 - A community feedback board with handles, ratings, comment history, and a live-session count
 

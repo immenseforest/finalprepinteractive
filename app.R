@@ -174,6 +174,147 @@ clean_community_text <- function(value, limit) {
   substr(value, 1, limit)
 }
 
+# ---------- Six-final scope and difficulty audit ----------
+# A "question group" is one numbered linear-algebra prompt, including all of
+# its subparts. Mixed/abstract groups either combine matrix sizes or state a
+# determinant/eigenvalue rule without a single computational matrix size.
+exam_matrix_dimension_counts <- data.frame(
+  year = 2020:2025,
+  two_by_two = c(3L, 2L, 1L, 1L, 0L, 1L),
+  three_by_three = c(9L, 5L, 4L, 4L, 4L, 2L),
+  mixed_or_abstract = c(0L, 0L, 0L, 0L, 2L, 0L),
+  four_by_four_or_larger = rep(0L, 6),
+  total_groups = c(12L, 7L, 5L, 5L, 6L, 3L),
+  stringsAsFactors = FALSE
+)
+
+# Only papers with explicit marks beside each linear-algebra question group
+# can support a defensible marks-based demand count. Those are 2021, 2022,
+# 2024, and 2025; 2020 and 2023 print section totals only.
+exam_linear_demand_counts <- data.frame(
+  demand = c("Short: 2-3 marks", "Medium: 4-6 marks", "Long: 7-10 marks"),
+  groups = c(10L, 5L, 6L),
+  share = c(10, 5, 6) / 21,
+  interpretation = c(
+    "One identity, decision, or compact calculation",
+    "A complete inverse, system, parameter, or eigen task",
+    "A linked multi-part workflow such as eigenpairs to diagonalization or roots"
+  ),
+  stringsAsFactors = FALSE
+)
+
+exam_pattern_frequency <- data.frame(
+  domain = c(
+    rep("Linear algebra", 6),
+    rep("Laplace transforms", 7),
+    rep("Differential equations", 6)
+  ),
+  pattern = c(
+    "Eigenvalues or eigenvectors",
+    "Determinants, inverses, or singularity",
+    "Parameter-dependent matrix or system",
+    "Full diagonalization, matrix power, or root",
+    "Explicit linear-system solution",
+    "Dense 4 x 4 or larger computation",
+    "Direct and inverse transforms",
+    "Time shifts or unit-step functions",
+    "Integral equation or convolution",
+    "Differential equation solved with Laplace",
+    "Dirac impulse",
+    "Coupled first-order system",
+    "Dedicated transform-property bundle",
+    "Standalone differential-equation section",
+    "Standalone nonlinear ODE",
+    "Constant-coefficient or Cauchy-Euler ODE",
+    "Standalone third-order ODE",
+    "Construct an ODE from its solution",
+    "Fourth-order or higher / PDE / numerical method"
+  ),
+  papers = c(
+    6L, 6L, 6L, 5L, 4L, 0L,
+    6L, 6L, 6L, 6L, 4L, 3L, 2L,
+    3L, 3L, 2L, 2L, 1L, 0L
+  ),
+  priority = c(
+    "Core", "Core", "Core", "Core", "Core", "Low evidence",
+    "Core", "Core", "Core", "Core", "Frequent", "Frequent", "Selective",
+    "Recent emphasis", "Recent emphasis", "Selective", "Selective", "Rare", "Low evidence"
+  ),
+  stringsAsFactors = FALSE
+)
+
+# The two most recent papers have explicit topic sections and total 100 marks
+# together: differential equations 19, Laplace 30, linear algebra 51.
+recent_study_weights <- c(
+  "Linear algebra" = 0.51,
+  "Laplace transforms" = 0.30,
+  "Differential equations" = 0.19
+)
+
+exam_scope_guides <- list(
+  "Linear algebra" = list(
+    headline = "Master 2 x 2 and 3 x 3 workflows; learn larger sizes conceptually.",
+    evidence = paste(
+      "The six papers contain 38 matrix-focused question groups:",
+      "28 are 3 x 3-focused, 8 are 2 x 2-focused, 2 are mixed or abstract,",
+      "and none is focused on dense 4 x 4-or-larger hand computation."
+    ),
+    master = paste(
+      "Eigenpairs, normalization, determinant and inverse rules, parameter cases,",
+      "system consistency, diagonalization, and using P D P^-1 for powers or roots."
+    ),
+    stop_rule = paste(
+      "After three clean timed 3 x 3 eigen/diagonalization workflows, two inverse-or-system",
+      "problems, and ten determinant identities, switch to mixed practice instead of",
+      "drilling bigger dense matrices."
+    ),
+    stretch = paste(
+      "Know how row reduction and determinant ideas scale, and recognize triangular,",
+      "diagonal, sparse, or block 4 x 4 / 6 x 6 matrices. A dense 6 x 6 computation is",
+      "possible in principle, but it has zero support in this six-final sample."
+    )
+  ),
+  "Laplace transforms" = list(
+    headline = "Prioritize method recognition and algebra over obscure table entries.",
+    evidence = paste(
+      "Direct/inverse transforms, delays, convolution or integral equations, and",
+      "Laplace-based differential equations each appear in all six papers."
+    ),
+    master = paste(
+      "Table pairs, completing the square, partial fractions, first and second shifting,",
+      "unit steps, convolution, impulses, integral equations, and initial conditions."
+    ),
+    stop_rule = paste(
+      "Once you can complete two mixed examples of each recurring family without choosing",
+      "the wrong property, spend the remaining time on partial-fraction speed and checking",
+      "initial conditions rather than collecting rare identities."
+    ),
+    stretch = paste(
+      "Dedicated property bundles appear in 2 of 6 papers and the logarithmic inverse form",
+      "appears once. Review them after the recurring transform and IVP workflows are reliable."
+    )
+  ),
+  "Differential equations" = list(
+    headline = "Cover the recent standalone ODE families, but keep the scope narrow.",
+    evidence = paste(
+      "Standalone ODE sections appear in 3 of 6 papers and carry 19 of the 100 marks",
+      "across 2024-2025. Nonlinear ODEs appear in each of those three standalone sections."
+    ),
+    master = paste(
+      "Constant-coefficient roots, Cauchy-Euler substitution, constructing an ODE from a",
+      "solution, reducible nonlinear equations, and two-equation first-order systems."
+    ),
+    stop_rule = paste(
+      "Complete one correct timed problem from each observed family, then return to linear",
+      "algebra and Laplace unless an instructor handout signals extra ODE coverage."
+    ),
+    stretch = paste(
+      "No supplied paper contains a fourth-order-or-higher standalone ODE, PDE, or numerical",
+      "method question. Learn the general ideas only if they are explicitly in your course scope."
+    )
+  )
+)
+
 community_comments <- reactiveVal(read_community_comments())
 community_active_users <- reactiveVal(0L)
 
@@ -1164,6 +1305,13 @@ source_prompt_story <- list(
       "Check every final answer in all mock-exam versions, make every solution hint more detailed with readable algebra, and add a main-page comment section with handles, thumbs up or down, a live-user count, and comment history."
     ),
     outcome = "Independently rechecked all 25 answers, added displayed line-by-line derivations to every hidden solution, and built a sanitized community feedback board with ratings, shared history, and a live session counter."
+  ),
+  list(
+    phase = "17 · Efficient exam scope", title = "Study what the finals actually reward",
+    prompts = c(
+      "Under Roadmap & Practice, add detailed statistics about question difficulty and size, including how often matrices were 4 x 4 and whether 6 x 6 could appear, so learners do not over-study low-value material."
+    ),
+    outcome = "Re-audited all six finals at question-group level, added matrix-size and marks-based demand counts, exposed technique frequencies, and built a recent-exam time allocator with evidence-based stop rules."
   )
 )
 
@@ -1189,8 +1337,8 @@ source_prompts_page <- function() {
       ),
       div(
         class = "prompt-stats",
-        div(strong("16"), span("build milestones")),
-        div(strong("38"), span("source requests reviewed")),
+        div(strong("17"), span("build milestones")),
+        div(strong("39"), span("source requests reviewed")),
         div(strong("2020–2025"), span("finals represented"))
       )
     ),
@@ -1369,6 +1517,48 @@ ui <- fluidPage(
       .metric { background:#04080d; border:1px solid var(--border); border-radius:12px; padding:14px; }
       .metric span { display:block; color:var(--muted); font-size:12px; margin-bottom:5px; }
       .metric strong { color:var(--text); font-size:18px; font-variant-numeric:tabular-nums; }
+      .scope-metric-row { display:grid; grid-template-columns:repeat(4,minmax(0,1fr));
+        gap:12px; margin:16px 0 20px; }
+      .scope-metric { padding:16px; background:linear-gradient(145deg,#071524,#03080d);
+        border:1px solid #244b6d; border-radius:12px; }
+      .scope-metric strong { display:block; color:#eef6ff; font-family:Georgia,serif;
+        font-size:24px; line-height:1; font-variant-numeric:tabular-nums; }
+      .scope-metric span { display:block; margin-top:7px; color:var(--muted);
+        font-size:12px; line-height:1.4; }
+      .scope-callout { margin:18px 0; padding:17px 18px; color:#cfe3f5;
+        background:#071b2d; border:1px solid #2c6090; border-left:5px solid var(--cyan);
+        border-radius:10px; line-height:1.6; }
+      .scope-callout h3 { margin:0 0 7px; color:#eef6ff; }
+      .scope-callout p { margin:0; }
+      .stats-table-wrap { overflow-x:auto; }
+      .stats-table-wrap table { min-width:720px; margin-bottom:0; }
+      .frequency-badge { display:inline-block; min-width:48px; padding:4px 8px;
+        color:#d9ecff; background:#09243c; border:1px solid #2c6090;
+        border-radius:999px; font-size:11px; font-weight:800; text-align:center; }
+      .demand-list { display:grid; gap:12px; margin-top:16px; }
+      .demand-item { display:grid; grid-template-columns:140px minmax(120px,1fr) 44px;
+        gap:12px; align-items:center; }
+      .demand-label { color:#d7e8f7; font-size:12px; font-weight:700; }
+      .demand-track { height:10px; overflow:hidden; background:#03080d;
+        border:1px solid #244b6d; border-radius:999px; }
+      .demand-fill { display:block; height:100%; background:linear-gradient(90deg,var(--cyan),#7d9cff); }
+      .demand-count { color:#b9dcff; font-size:12px; font-weight:800; text-align:right; }
+      .study-budget { display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+        gap:10px; margin-top:14px; }
+      .study-budget>div { padding:13px; background:#040b12; border:1px solid #244b6d;
+        border-radius:9px; }
+      .study-budget strong { display:block; color:#eef6ff; font-size:20px;
+        font-variant-numeric:tabular-nums; }
+      .study-budget span { color:var(--muted); font-size:12px; }
+      .scope-guide { display:grid; gap:12px; margin-top:13px; }
+      .scope-guide h3 { margin:0; color:#eef6ff; }
+      .scope-guide-block { padding:13px 14px; background:#040b12;
+        border:1px solid #244b6d; border-radius:9px; }
+      .scope-guide-block strong { display:block; margin-bottom:5px; color:var(--cyan);
+        font-size:11px; letter-spacing:.08em; text-transform:uppercase; }
+      .scope-guide-block p { margin:0; color:#c8dbea; line-height:1.55; }
+      .scope-method-note { margin:13px 0 0; color:var(--muted); font-size:11px;
+        line-height:1.55; }
       .preset-actions { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px; }
       .preset-actions .btn { color:var(--text); background:#0a1a2a; border:1px solid var(--border);
         border-radius:9px; }
@@ -1747,6 +1937,21 @@ ui <- fluidPage(
       .legacy-mode .hint,.legacy-mode .metric span { color:#444; }
       .legacy-mode .formula,.legacy-mode .metric { color:#000; background:#ffffe1;
         border:2px inset #fff; border-radius:0; }
+      .legacy-mode .scope-metric,.legacy-mode .scope-callout,
+      .legacy-mode .scope-guide-block,.legacy-mode .study-budget>div {
+        color:#000; background:#ffffe1; border:2px inset #fff; border-radius:0; }
+      .legacy-mode .scope-callout { border-left:5px solid #000080; }
+      .legacy-mode .scope-metric strong,.legacy-mode .scope-callout h3,
+      .legacy-mode .scope-guide h3,.legacy-mode .study-budget strong { color:#000080; }
+      .legacy-mode .scope-metric span,.legacy-mode .study-budget span,
+      .legacy-mode .scope-method-note { color:#444; }
+      .legacy-mode .scope-guide-block strong { color:#800000; }
+      .legacy-mode .scope-guide-block p { color:#000; }
+      .legacy-mode .frequency-badge { color:#fff; background:#000080;
+        border:1px solid #000; border-radius:0; }
+      .legacy-mode .demand-label,.legacy-mode .demand-count { color:#000; }
+      .legacy-mode .demand-track { background:#fff; border:2px inset #fff; border-radius:0; }
+      .legacy-mode .demand-fill { background:#000080; }
       .legacy-mode .formula { border-left:5px solid #000080; }
       .legacy-mode .control-label,.legacy-mode .video-card p,.legacy-mode .learning-path {
         color:#000; }
@@ -1871,6 +2076,8 @@ ui <- fluidPage(
       @media(max-width:1050px){ #main_navigation{grid-template-columns:repeat(3,minmax(0,1fr));position:static;} }
       @media(max-width:800px){ .concept,.video-grid{grid-template-columns:1fr;} .hero{padding:30px 20px;}
         .content{padding:22px 16px;} .metric-row{grid-template-columns:1fr;}
+        .scope-metric-row{grid-template-columns:repeat(2,minmax(0,1fr));}
+        .study-budget{grid-template-columns:1fr;}
         .module-heading{grid-template-columns:1fr;} .module-seal{width:46px;height:46px;}
         .theme-toggle{position:static;margin-top:16px;} .legacy-mode h1{max-width:none;}
         .legacy-mode .theme-toggle{position:static;} .prompt-stats{grid-template-columns:1fr;}
@@ -1884,6 +2091,9 @@ ui <- fluidPage(
         .chat-window-bar{grid-template-columns:auto 1fr;}.chat-window-status{display:none;}
         .prompt-phase{padding:9px 14px;} }
       @media(max-width:560px){ #main_navigation{grid-template-columns:repeat(2,minmax(0,1fr));}
+        .scope-metric-row{grid-template-columns:1fr;}
+        .demand-item{grid-template-columns:1fr 42px;gap:7px;}
+        .demand-label{grid-column:1 / -1;}
         .mock-version-picker .shiny-options-group{grid-template-columns:repeat(2,minmax(0,1fr));}
         .community-summary{grid-template-columns:1fr;}
         .community-comment-meta time{width:100%;margin-left:0;}
@@ -3085,6 +3295,167 @@ ui <- fluidPage(
                     div(class = "metric", span("Priority 2"), strong("Laplace transforms")),
                     div(class = "metric", span("Priority 3"), strong("Differential equations"))
                   ),
+                  div(
+                    class = "card",
+                    div(class = "eyebrow", "Question-level evidence"),
+                    h2("How large and demanding were the actual questions?"),
+                    tags$p(
+                      "These counts come from a fresh audit of every numbered group in the six supplied finals. ",
+                      "They describe the sample exactly; they do not impose a limit on a future instructor."
+                    ),
+                    div(
+                      class = "scope-metric-row",
+                      div(class = "scope-metric", strong("38"), span("linear-algebra question groups")),
+                      div(class = "scope-metric", strong("28"), span("3 x 3-focused groups · 74%")),
+                      div(class = "scope-metric", strong("8"), span("2 x 2-focused groups · 21%")),
+                      div(class = "scope-metric", strong("0"), span("4 x 4-or-larger focused groups"))
+                    ),
+                    div(
+                      class = "scope-callout",
+                      h3("Could a 6 x 6 matrix appear?"),
+                      tags$p(
+                        strong("Yes in principle, but it is a low-yield study target from this evidence. "),
+                        "No 4 x 4, 5 x 5, or 6 x 6 dense-computation group appears in any of the six finals. ",
+                        "Learn procedures so they scale, then practise speed on 2 x 2 and 3 x 3 matrices. ",
+                        "For larger matrices, prioritize recognizing triangular, diagonal, sparse, or block structure ",
+                        "instead of drilling long dense determinants or inverses by hand."
+                      )
+                    ),
+                    fluidRow(
+                      column(
+                        7,
+                        h3("Matrix-size frequency by final"),
+                        div(
+                          class = "stats-table-wrap",
+                          tags$table(
+                            tags$thead(
+                              tags$tr(
+                                tags$th("Final"),
+                                tags$th("2 x 2 focus"),
+                                tags$th("3 x 3 focus"),
+                                tags$th("Mixed / abstract"),
+                                tags$th("4 x 4+ focus"),
+                                tags$th("Total")
+                              )
+                            ),
+                            tags$tbody(
+                              lapply(seq_len(nrow(exam_matrix_dimension_counts)), function(index) {
+                                row <- exam_matrix_dimension_counts[index, ]
+                                tags$tr(
+                                  tags$td(row$year),
+                                  tags$td(row$two_by_two),
+                                  tags$td(row$three_by_three),
+                                  tags$td(row$mixed_or_abstract),
+                                  tags$td(row$four_by_four_or_larger),
+                                  tags$td(strong(row$total_groups))
+                                )
+                              }),
+                              tags$tr(
+                                tags$td(strong("Total")),
+                                tags$td(strong(sum(exam_matrix_dimension_counts$two_by_two))),
+                                tags$td(strong(sum(exam_matrix_dimension_counts$three_by_three))),
+                                tags$td(strong(sum(exam_matrix_dimension_counts$mixed_or_abstract))),
+                                tags$td(strong(sum(exam_matrix_dimension_counts$four_by_four_or_larger))),
+                                tags$td(strong(sum(exam_matrix_dimension_counts$total_groups)))
+                              )
+                            )
+                          )
+                        )
+                      ),
+                      column(
+                        5,
+                        h3("Marks-based demand"),
+                        tags$p(
+                          "For the 21 linear-algebra groups whose individual marks are printed, marks provide a ",
+                          "useful proxy for the length and integration of the task."
+                        ),
+                        div(
+                          class = "demand-list",
+                          lapply(seq_len(nrow(exam_linear_demand_counts)), function(index) {
+                            row <- exam_linear_demand_counts[index, ]
+                            div(
+                              class = "demand-item",
+                              span(class = "demand-label", row$demand),
+                              span(
+                                class = "demand-track",
+                                span(
+                                  class = "demand-fill",
+                                  style = paste0("width:", round(100 * row$share), "%")
+                                )
+                              ),
+                              span(class = "demand-count", paste0(row$groups, "/21"))
+                            )
+                          })
+                        ),
+                        tags$p(
+                          class = "scope-method-note",
+                          "Short: 10 groups (48%). Medium: 5 (24%). Long: 6 (29%). ",
+                          "A long group usually links several subparts; it is not necessarily one unusually hard calculation."
+                        )
+                      )
+                    ),
+                    tags$p(
+                      class = "scope-method-note",
+                      "Counting rule: one numbered linear-algebra prompt equals one group, even when it has subparts. ",
+                      "The 2024 rectangular A B = C prompt and a generic determinant-identity prompt are classified ",
+                      "as mixed/abstract. The 2020 and 2023 papers show section marks rather than marks for each group, ",
+                      "so they are included in size counts but excluded from the demand chart."
+                    )
+                  ),
+                  fluidRow(
+                    column(
+                      5,
+                      div(
+                        class = "card",
+                        div(class = "eyebrow", "Recent-exam budget"),
+                        h3("Allocate your available study time"),
+                        sliderInput(
+                          "study_hours",
+                          "Focused hours available this week",
+                          min = 2, max = 30, value = 10, step = 1
+                        ),
+                        uiOutput("study_budget"),
+                        tags$p(
+                          class = "scope-method-note",
+                          "The 50% / 30% / 20% split rounds the combined 2024-2025 mark weights: ",
+                          "linear algebra 51%, Laplace 30%, differential equations 19%."
+                        )
+                      )
+                    ),
+                    column(
+                      7,
+                      div(
+                        class = "card",
+                        div(class = "eyebrow", "Avoid low-value over-study"),
+                        h3("Evidence-based stopping point"),
+                        selectInput(
+                          "efficiency_topic",
+                          "Choose a domain",
+                          choices = names(exam_scope_guides),
+                          selected = "Linear algebra"
+                        ),
+                        uiOutput("efficiency_scope")
+                      )
+                    )
+                  ),
+                  div(
+                    class = "card",
+                    div(class = "eyebrow", "Frequency means papers, not subparts"),
+                    h3("How often did each method appear?"),
+                    selectInput(
+                      "frequency_domain",
+                      "Filter the audit",
+                      choices = unique(exam_pattern_frequency$domain),
+                      selected = "Linear algebra"
+                    ),
+                    uiOutput("exam_frequency_table"),
+                    tags$p(
+                      class = "scope-method-note",
+                      "A count of 6/6 means the method appeared somewhere on every supplied final. ",
+                      "Zero means no observed example, not zero probability. Always give newer instructor guidance ",
+                      "and the official course outline priority over this historical sample."
+                    )
+                  ),
                   fluidRow(
                     column(7,
                       div(class = "card",
@@ -3448,6 +3819,92 @@ server <- function(input, output, session) {
         "Your comment is visible now, but this host could not save it across restarts."
       },
       type = if (persisted) "message" else "warning"
+    )
+  })
+
+  output$study_budget <- renderUI({
+    hours <- if (is.null(input$study_hours)) 10 else input$study_hours
+    allocations <- hours * recent_study_weights
+    div(
+      class = "study-budget",
+      lapply(names(allocations), function(topic) {
+        div(
+          strong(sprintf("%.1f h", allocations[[topic]])),
+          span(topic)
+        )
+      })
+    )
+  })
+
+  output$efficiency_scope <- renderUI({
+    topic <- if (is.null(input$efficiency_topic)) {
+      "Linear algebra"
+    } else {
+      input$efficiency_topic
+    }
+    guide <- exam_scope_guides[[topic]]
+    div(
+      class = "scope-guide",
+      h3(guide$headline),
+      div(
+        class = "scope-guide-block",
+        strong("What the six finals show"),
+        tags$p(guide$evidence)
+      ),
+      div(
+        class = "scope-guide-block",
+        strong("Master this"),
+        tags$p(guide$master)
+      ),
+      div(
+        class = "scope-guide-block",
+        strong("Stop rule"),
+        tags$p(guide$stop_rule)
+      ),
+      div(
+        class = "scope-guide-block",
+        strong("Stretch only after the core"),
+        tags$p(guide$stretch)
+      )
+    )
+  })
+
+  output$exam_frequency_table <- renderUI({
+    domain <- if (is.null(input$frequency_domain)) {
+      "Linear algebra"
+    } else {
+      input$frequency_domain
+    }
+    rows <- exam_pattern_frequency[
+      exam_pattern_frequency$domain == domain,
+      ,
+      drop = FALSE
+    ]
+    div(
+      class = "stats-table-wrap",
+      tags$table(
+        tags$thead(
+          tags$tr(
+            tags$th("Observed method"),
+            tags$th("Finals"),
+            tags$th("Study signal")
+          )
+        ),
+        tags$tbody(
+          lapply(seq_len(nrow(rows)), function(index) {
+            tags$tr(
+              tags$td(rows$pattern[[index]]),
+              tags$td(
+                span(
+                  class = "frequency-badge",
+                  paste0(rows$papers[[index]], "/6")
+                )
+              ),
+              tags$td(rows$priority[[index]])
+            )
+          })
+        )
+      )
     )
   })
 
