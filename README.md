@@ -13,8 +13,9 @@ The app includes:
 - A frontier-inspired rocket stability lab that connects eigenvalues to
   low-gravity propellant slosh, control lag, orbital refueling, and a live
   five-state disturbance simulation
-- A three-mission Rocket Balancer mini game with live eigenvalue feedback,
-  named player runs, mastery scoring, and a persistent top-10 leaderboard
+- A three-mission Rocket Balancer mini game with a live one-tick pattern coach,
+  ASCII concept diagrams, fully disclosed rules/scoring, named player runs,
+  mastery scoring, and a persistent top-10 leaderboard
 - Widescreen learning cockpits that align related plots side by side while
   automatically stacking them on tablets and phones
 - Exam coverage map with matrix-size frequencies, difficulty proxies,

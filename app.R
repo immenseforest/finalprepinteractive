@@ -417,6 +417,125 @@ top_rocket_scores <- function(scores, limit = 10L) {
   head(scores, limit)
 }
 
+rocket_game_control_ranges <- list(
+  control = c(minimum = .30, maximum = 1.60, step = .05),
+  damping = c(minimum = .005, maximum = .250, step = .005),
+  lag = c(minimum = .05, maximum = 1.20, step = .01)
+)
+
+evaluate_rocket_game_candidate <- function(mission, control, damping, lag,
+                                           simulate_response = TRUE) {
+  model <- build_rocket_slosh_model(
+    control, mission$slosh_frequency, damping, lag, mission$coupling
+  )
+  if (isTRUE(simulate_response)) {
+    model$response <- simulate_rocket_slosh(model$A)
+    model$peak_pitch <- max(abs(model$response$pitch_deg), na.rm = TRUE)
+  } else {
+    model$response <- NULL
+    model$peak_pitch <- NA_real_
+  }
+  model$checks <- c(
+    margin = model$rightmost <= mission$target_real,
+    pitch = if (is.finite(model$peak_pitch)) model$peak_pitch <= mission$maximum_pitch else TRUE,
+    control = model$control_frequency >= mission$minimum_control,
+    damping = model$slosh_damping <= mission$maximum_damping,
+    lag = model$actuator_lag >= mission$minimum_lag
+  )
+  model$mission <- mission
+  model
+}
+
+rocket_game_candidate_loss <- function(candidate) {
+  mission <- candidate$mission
+  sum(c(
+    margin = 4 * max(0, (candidate$rightmost - mission$target_real) / .10),
+    pitch = if (is.finite(candidate$peak_pitch)) {
+      2 * max(0, (candidate$peak_pitch - mission$maximum_pitch) / mission$maximum_pitch)
+    } else 0,
+    control = max(0, (mission$minimum_control - candidate$control_frequency) / .20),
+    damping = max(0, (candidate$slosh_damping - mission$maximum_damping) / .05),
+    lag = max(0, (mission$minimum_lag - candidate$actuator_lag) / .10)
+  ))
+}
+
+recommend_rocket_game_move <- function(candidate) {
+  if (all(candidate$checks)) {
+    return(list(
+      ready = TRUE,
+      title = "Pattern confirmed: left means settling",
+      text = "All five checks pass. The rightmost diamond is beyond the mission line and the time trace stays bounded. Lock the solution now."
+    ))
+  }
+
+  current_values <- c(
+    control = candidate$control_frequency,
+    damping = candidate$slosh_damping,
+    lag = candidate$actuator_lag
+  )
+  display_names <- c(
+    control = "controller speed ωc",
+    damping = "slosh damping ζs",
+    lag = "control lag τ"
+  )
+  experiments <- list()
+  experiment_index <- 0L
+
+  for (parameter in names(current_values)) {
+    range <- rocket_game_control_ranges[[parameter]]
+    for (direction in c(-1, 1)) {
+      proposed <- current_values
+      proposed[[parameter]] <- proposed[[parameter]] + direction * range[["step"]]
+      if (proposed[[parameter]] < range[["minimum"]] ||
+          proposed[[parameter]] > range[["maximum"]]) next
+      experiment_index <- experiment_index + 1L
+      result <- evaluate_rocket_game_candidate(
+        candidate$mission, proposed[["control"]], proposed[["damping"]], proposed[["lag"]],
+        simulate_response = FALSE
+      )
+      experiments[[experiment_index]] <- list(
+        parameter = parameter,
+        direction = if (direction > 0) "increase" else "decrease",
+        value = proposed[[parameter]],
+        result = result,
+        loss = rocket_game_candidate_loss(result)
+      )
+    }
+  }
+
+  losses <- vapply(experiments, function(experiment) experiment$loss, numeric(1))
+  best <- experiments[[which.min(losses)]]
+  delta_real <- best$result$rightmost - candidate$rightmost
+  direction_word <- if (delta_real < -1e-5) "left" else if (delta_real > 1e-5) "right" else "almost nowhere"
+  unit <- if (best$parameter == "control") " rad/s" else if (best$parameter == "lag") " s" else ""
+
+  list(
+    ready = FALSE,
+    title = paste("Best next experiment:", best$direction, display_names[[best$parameter]]),
+    text = sprintf(
+      "Move it one tick to %.3f%s. The local model predicts the rightmost pole moves %s (%+.3f → %+.3f). Change one knob, then verify that prediction on both graphs.",
+      best$value, unit, direction_word, candidate$rightmost, best$result$rightmost
+    ),
+    parameter = best$parameter,
+    direction = best$direction,
+    predicted_rightmost = best$result$rightmost
+  )
+}
+
+score_rocket_game_mission <- function(candidate, failed_attempts, elapsed_seconds) {
+  mission <- candidate$mission
+  parts <- c(
+    base = 750,
+    margin = round(min(160, max(0, (-candidate$rightmost - abs(mission$target_real)) * 900))),
+    time = round(max(0, 120 - elapsed_seconds)),
+    damping = round(100 * max(0, 1 - candidate$slosh_damping / mission$maximum_damping)),
+    lag = round(80 * min(1, candidate$actuator_lag / .8)),
+    control = round(90 * max(0, 1 - abs(candidate$control_frequency - mission$minimum_control) / 1.1)),
+    attempts = -120 * failed_attempts
+  )
+  list(parts = parts, total = as.integer(max(300, sum(parts))))
+}
+
 # ---------- Six-final scope and difficulty audit ----------
 # A "question group" is one numbered linear-algebra prompt, including all of
 # its subparts. Mixed/abstract groups either combine matrix sizes or state a
@@ -1599,6 +1718,13 @@ source_prompt_story <- list(
       "Add a mini game beside the rocket page that challenges the player's understanding of using eigenvalues to balance the rocket, asks for a player name, and displays the top 10 scores."
     ),
     outcome = "Built a three-mission Rocket Balancer game with live pole and disturbance plots, escalating stability constraints, immediate objective feedback, efficiency-aware scoring, named player runs, and a persistent best-score leaderboard."
+  ),
+  list(
+    phase = "24 · Open learning game", title = "Make every rule visible and every move educational",
+    prompts = c(
+      "Debug the game, make it intuitive and useful for learning, explain how it trains pattern recognition, open-source every rule and scoring decision on the page, and add ASCII art that connects eigenvalues to rocket motion."
+    ),
+    outcome = "Rebuilt the game flow around predict–move–verify practice, added a live one-tick pattern coach, clearer readiness and name feedback, a mission reset, transition-safe baselines, three ASCII concept diagrams, and an on-page rulebook covering the model, thresholds, algorithm, scoring, storage, and complete R source."
   )
 )
 
@@ -1624,8 +1750,8 @@ source_prompts_page <- function() {
       ),
       div(
         class = "prompt-stats",
-        div(strong("23"), span("build milestones")),
-        div(strong("45"), span("source requests reviewed")),
+        div(strong("24"), span("build milestones")),
+        div(strong("46"), span("source requests reviewed")),
         div(strong("2020–2025"), span("finals represented"))
       )
     ),
@@ -1681,22 +1807,30 @@ rocket_game_page <- function() {
       div(class = "eyebrow", "Mini game · three-mission mastery run"),
       h2("Rocket Balancer"),
       tags$p(
-        "Move every dangerous eigenvalue left without making the vehicle too slow or demanding impossible hardware. Read the poles, tune the controller, and lock your solution."
+        "Learn to recognize stability before doing long calculations. Your job is to move the dominant eigenvalue left, keep the motion bounded, and respect realistic design limits."
+      ),
+      div(class = "rocket-pattern-benefit",
+        strong("Why this trains pattern recognition"),
+        span("You repeatedly connect the same three views: knob change → pole movement → rocket motion. After a few rounds, ‘rightmost pole’ stops being abstract and becomes a visual warning you can spot quickly on an exam.")
       ),
       div(class = "rocket-game-loop",
-        span(strong("1"), " Read the mission"),
-        span(strong("2"), " Tune three controls"),
-        span(strong("3"), " Lock the eigenvalues"),
-        span(strong("4"), " Climb the leaderboard")
+        span(strong("1"), " Predict one knob's effect"),
+        span(strong("2"), " Move one slider"),
+        span(strong("3"), " Verify both graphs"),
+        span(strong("4"), " Pass 5 checks and lock")
       )
     ),
     div(class = "rocket-game-grid",
       div(class = "card rocket-game-controls",
         div(class = "eyebrow", "Player console"),
         textInput("rocket_game_handle", "Player name", placeholder = "Enter a public game name"),
-        actionButton("rocket_game_start", "Start / restart run", class = "btn-primary"),
+        actionButton("rocket_game_start", "Start a new three-mission run", class = "btn-primary"),
+        uiOutput("rocket_game_name_error"),
         uiOutput("rocket_game_player_status"),
-        h3("Stability controls"),
+        h3("Change one knob at a time"),
+        tags$p(class = "hint rocket-control-method",
+          "Say your prediction first. Then move one tick and watch the diamond plus the time trace."
+        ),
         sliderInput(
           "rocket_game_control",
           tagList("Controller speed ωc", help_tip("Higher values correct tilt faster, but excessive speed plus lag can drive a pole into the unstable half-plane.")),
@@ -1714,9 +1848,11 @@ rocket_game_page <- function() {
           min = .05, max = 1.2, value = .82, step = .01, ticks = FALSE,
           post = " s"
         ),
-        actionButton("rocket_game_lock", "Lock this solution", class = "btn-primary btn-block"),
+        uiOutput("rocket_game_readiness"),
+        actionButton("rocket_game_lock", "Check solution", class = "btn-primary btn-block"),
+        actionButton("rocket_game_reset_mission", "Reset this mission's sliders", class = "btn-block"),
         tags$p(class = "hint rocket-game-hint",
-          "Score rewards stability margin, few failed attempts, and efficient hardware choices. Speed matters only as a small tie-breaker."
+          "The check button is also your submit button. Failed checks give a precise clue; passed checks advance the run."
         )
       ),
       div(class = "rocket-game-arena",
@@ -1726,13 +1862,180 @@ rocket_game_page <- function() {
           plotly::plotlyOutput("rocket_game_plot", height = "430px")
         ),
         uiOutput("rocket_game_objectives"),
+        uiOutput("rocket_game_coach"),
         uiOutput("rocket_game_feedback")
       ),
       div(class = "card rocket-game-leaderboard",
-        div(class = "eyebrow", "Persistent leaderboard"),
+        div(class = "eyebrow", "Shared leaderboard"),
         h3("Top 10 players"),
         tags$p(class = "hint", "Best completed run per name. Ties favor the faster run."),
         uiOutput("rocket_game_leaderboard")
+      )
+    ),
+    div(class = "card rocket-ascii-manual",
+      div(class = "eyebrow", "ASCII flight manual · pictures made from text"),
+      h2("Three pictures to keep in your head"),
+      div(class = "rocket-ascii-grid",
+        div(
+          h3("1 · What is moving?"),
+          tags$pre(class = "rocket-ascii", paste(c(
+            "          /\\",
+            "         /  \\",
+            "        /____\\",
+            "        |  θ |  <- body tilt",
+            "        |~~~~|  <- liquid slosh φ",
+            "        |____|",
+            "          ||",
+            "      control torque"
+          ), collapse = "\n")),
+          tags$p("The controller turns the body while the liquid continues to swing inside it.")
+        ),
+        div(
+          h3("2 · Read the pole map"),
+          tags$pre(class = "rocket-ascii", paste(c(
+            " settles faster       grows / tips over",
+            "<------------------|------------------>",
+            "  x     x     ◆     0          x",
+            "              ^",
+            "       rightmost eigenvalue",
+            "          Re(λ) direction"
+          ), collapse = "\n")),
+          tags$p("The rightmost diamond predicts the slowest-decaying—or fastest-growing—part of the motion.")
+        ),
+        div(
+          h3("3 · See the feedback loop"),
+          tags$pre(class = "rocket-ascii", paste(c(
+            "tilt -> sensor -> controller",
+            "  ^                    |",
+            "  |                    v",
+            "rocket <- torque <- actuator",
+            "  |",
+            "  +---- liquid slosh loops back"
+          ), collapse = "\n")),
+          tags$p("A correction can arrive late and push while the liquid is already swinging the other way.")
+        )
+      )
+    ),
+    div(class = "card rocket-open-rules",
+      div(class = "eyebrow", "Open rules · nothing hidden"),
+      h2("How the game model, win checks, and score work"),
+      tags$p(
+        "This is an educational five-state model—not SpaceX flight software or proprietary vehicle data. ",
+        tags$a(
+          href = "https://github.com/immenseforest/finalprepinteractive/blob/main/app.R",
+          target = "_blank", rel = "noopener noreferrer",
+          "Read the complete R source code"
+        ),
+        ". The exact game logic is also translated below."
+      ),
+      div(class = "rocket-rules-grid",
+        div(
+          h3("The five states"),
+          tags$ol(class = "learning-path",
+            tags$li("θ: rocket body angle"),
+            tags$li("θ̇: body turning rate"),
+            tags$li("φ: liquid slosh angle"),
+            tags$li("φ̇: liquid slosh rate"),
+            tags$li("u: delayed control torque")
+          ),
+          math_block("\\dot{x}=Ax,\\qquad x=[\\theta,\\dot{\\theta},\\phi,\\dot{\\phi},u]^T",
+                     "Five-state rocket game model x dot equals A x"),
+          math_block(
+            paste0(
+              "A=\\begin{bmatrix}",
+              "0&1&0&0&0\\\\",
+              "0&0&\\kappa\\omega_s^2&0&1\\\\",
+              "0&0&0&1&0\\\\",
+              "0&0&-\\omega_s^2&-2\\zeta_s\\omega_s&-1\\\\",
+              "-\\omega_c^2/\\tau&-1.4\\omega_c/\\tau&0&0&-1/\\tau",
+              "\\end{bmatrix}"
+            ),
+            "Exact five by five state matrix used by the Rocket Balancer game"
+          ),
+          tags$p(class = "hint",
+            "κ and ωs come from the mission; ωc, ζs, and τ come from your sliders. Controller damping is fixed at 0.7, which creates the 1.4ωc term. The app computes all five eigenvalues and marks the one with the largest real part as a diamond."
+          )
+        ),
+        div(
+          h3("What each knob changes"),
+          tags$table(
+            tags$thead(tags$tr(tags$th("Knob"), tags$th("Meaning"), tags$th("Pattern to watch"))),
+            tags$tbody(
+              tags$tr(tags$td("ωc"), tags$td("Controller speed"), tags$td("Faster is not always safer when control and slosh rhythms crowd together.")),
+              tags$tr(tags$td("ζs"), tags$td("Liquid damping"), tags$td("Usually shrinks oscillations and pulls the liquid pair left, but damping has a mission budget.")),
+              tags$tr(tags$td("τ"), tags$td("Actuator lag"), tags$td("Large lag means a late correction; unrealistically tiny lag is forbidden by the hardware floor."))
+            )
+          )
+        )
+      ),
+      h3("Exact win checks"),
+      tags$p("A mission passes only when all five Boolean checks are TRUE:"),
+      tags$pre(class = "rocket-rule-code", paste(c(
+        "rightmost_real_part <= mission_target",
+        "peak_absolute_pitch <= 3 degrees",
+        "controller_speed >= mission_minimum",
+        "slosh_damping <= mission_budget",
+        "actuator_lag >= hardware_floor"
+      ), collapse = "\n")),
+      div(class = "table-responsive",
+        tags$table(class = "rocket-mission-rules",
+          tags$thead(tags$tr(
+            tags$th("Mission"), tags$th("Slosh ωs"), tags$th("Coupling"),
+            tags$th("Re(λ*) target"), tags$th("ωc min"), tags$th("ζs max"), tags$th("τ min")
+          )),
+          tags$tbody(lapply(rocket_game_missions, function(mission) {
+            tags$tr(
+              tags$td(mission$title),
+              tags$td(sprintf("%.2f", mission$slosh_frequency)),
+              tags$td(sprintf("%.2f", mission$coupling)),
+              tags$td(sprintf("≤ %.2f", mission$target_real)),
+              tags$td(sprintf("%.2f", mission$minimum_control)),
+              tags$td(sprintf("%.2f", mission$maximum_damping)),
+              tags$td(sprintf("%.2f s", mission$minimum_lag))
+            )
+          }))
+        )
+      ),
+      div(class = "rocket-rules-grid rocket-score-rules",
+        div(
+          h3("Exact scoring"),
+          tags$pre(class = "rocket-rule-code", paste(c(
+            "base = 750",
+            "margin = min(160, max(0, (-Re(lambda*) - abs(target)) * 900))",
+            "time = max(0, 120 - elapsed_seconds)",
+            "damping = 100 * max(0, 1 - zeta_s / zeta_budget)",
+            "lag = 80 * min(1, tau / 0.8)",
+            "control = 90 * max(0, 1 - abs(omega_c - omega_min) / 1.1)",
+            "attempts = -120 * failed_attempts",
+            "mission_score = max(300, round(sum(all_terms)))"
+          ), collapse = "\n")),
+          tags$p(class = "hint", "The leaderboard keeps the best completed score for each case-insensitive player name.")
+        ),
+        div(
+          h3("Exact game loop"),
+          tags$pre(class = "rocket-rule-code", paste(c(
+            "1. Build A from the three sliders + mission constants.",
+            "2. Compute eigen(A).",
+            "3. Simulate x_dot = A x for 60 seconds from a 1° nudge.",
+            "4. Evaluate all five checks.",
+            "5. If any fail: name them and keep the same mission.",
+            "6. If all pass: score it and load the next mission.",
+            "7. After mission 3: save the run and rank the top 10."
+          ), collapse = "\n"))
+        )
+      ),
+      h3("How the live coach chooses one move"),
+      tags$pre(class = "rocket-rule-code", paste(c(
+        "for each legal +1 or -1 slider tick:",
+        "  rebuild A and compute its eigenvalues",
+        "  loss = 4 * max(0, (Re(lambda*) - target) / 0.10)",
+        "       + max(0, (omega_min - omega_c) / 0.20)",
+        "       + max(0, (zeta_s - zeta_budget) / 0.05)",
+        "       + max(0, (tau_min - tau) / 0.10)",
+        "recommend the legal tick with the smallest loss"
+      ), collapse = "\n")),
+      tags$p(class = "hint",
+        "The coach uses the fast eigenvalue calculation for six neighboring moves. The main simulator still performs the full 60-second pitch test for the current slider position."
       )
     )
   )
@@ -2082,13 +2385,20 @@ ui <- fluidPage(
       .rocket-source-links { display:flex; flex-wrap:wrap; gap:8px 16px; }
       .rocket-source-links a { color:#8fceff; font-size:11px; }
       .rocket-game-page { display:grid; gap:16px; }
-      .rocket-game-hero { margin:0; padding:18px 20px;
+      .rocket-game-hero { display:grid; grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);
+        gap:6px 20px; margin:0; padding:16px 20px;
         background:radial-gradient(circle at 90% 10%,rgba(77,163,255,.19),transparent 28%),
           linear-gradient(145deg,#071524,#03080d); }
-      .rocket-game-hero h2 { margin:4px 0 5px; }
-      .rocket-game-hero p { max-width:980px; margin:0; color:#c8dbea; }
+      .rocket-game-hero>.eyebrow,.rocket-game-hero>h2,.rocket-game-hero>p { grid-column:1; }
+      .rocket-game-hero h2 { margin:2px 0 1px; }
+      .rocket-game-hero p { max-width:620px; margin:0; color:#c8dbea; line-height:1.45; }
+      .rocket-pattern-benefit { grid-column:2; grid-row:1 / 4; align-self:stretch;
+        display:grid; align-content:center; gap:5px; margin:0; padding:11px 13px; color:#dceeff;
+        background:#071b2d; border-left:4px solid var(--cyan); border-radius:8px; }
+      .rocket-pattern-benefit strong { color:#eef7ff; }
+      .rocket-pattern-benefit span { color:#c8dbea; line-height:1.45; }
       .rocket-game-loop { display:grid; grid-template-columns:repeat(4,minmax(0,1fr));
-        gap:8px; margin-top:14px; }
+        grid-column:1 / -1; gap:8px; margin-top:6px; }
       .rocket-game-loop span { padding:8px 10px; color:#cfe6f8; background:#071b2d;
         border:1px solid #244d70; border-radius:8px; font-size:11px; }
       .rocket-game-loop strong { display:inline-grid; place-items:center; width:20px; height:20px;
@@ -2099,14 +2409,22 @@ ui <- fluidPage(
       .rocket-game-controls .form-group { margin-bottom:15px; }
       .rocket-game-controls h3 { margin:16px 0 8px; }
       .rocket-game-controls .btn { width:100%; }
+      .rocket-game-controls #rocket_game_reset_mission { margin-top:8px; }
+      .rocket-control-method { margin:-2px 0 12px; line-height:1.45; }
       .rocket-game-hint { margin:10px 0 0; line-height:1.45; }
+      .rocket-game-name-error { margin:8px 0 0; color:#ff9aaa; font-size:11px; line-height:1.4; }
       .rocket-game-player { margin:10px 0 0; padding:9px 10px; color:#dceeff;
         background:#071b2d; border-left:3px solid var(--cyan); border-radius:7px; }
       .rocket-game-player strong { color:#eef7ff; }
+      .rocket-game-readiness { margin:2px 0 9px; padding:9px 10px; color:#c9dceb;
+        background:#071524; border:1px solid #244d70; border-radius:7px; font-size:11px; }
+      .rocket-game-readiness.ready { color:#dffaff; border-color:#277e96; }
+      .rocket-game-readiness strong { color:inherit; }
       .rocket-game-arena { grid-column:4 / 10; display:grid; gap:10px; min-width:0; }
       .rocket-game-mission { margin:0; padding:14px 16px; }
       .rocket-game-mission h3 { margin:2px 0 5px; }
       .rocket-game-mission p { margin:0; color:#c8dbea; line-height:1.5; }
+      .rocket-game-mission .rocket-game-mission-goal { margin-top:7px; color:#9fc9e7; }
       .rocket-game-arena #rocket_game_metrics .metric-row { margin:0; gap:8px; }
       .rocket-game-arena #rocket_game_metrics .metric { padding:9px 10px; }
       .rocket-game-arena #rocket_game_metrics .metric span { font-size:10px; }
@@ -2120,6 +2438,12 @@ ui <- fluidPage(
       .rocket-game-objective::before { content:'○'; flex:0 0 auto; color:#89a8bf; font-weight:800; }
       .rocket-game-objective.passed { color:#dffaff; border-color:#277e96; }
       .rocket-game-objective.passed::before { content:'✓'; color:#48e0f0; }
+      .rocket-game-coach { margin:0; padding:12px 14px; color:#dceeff; background:#071524;
+        border:1px solid #2c6090; border-radius:8px; }
+      .rocket-game-coach.ready { border-color:#277e96; }
+      .rocket-game-coach h3 { margin:2px 0 4px; font-size:15px; }
+      .rocket-game-coach p { margin:0; line-height:1.48; }
+      .rocket-game-coach .eyebrow { margin-bottom:2px; }
       .rocket-game-feedback { margin:0; padding:12px 14px; color:#dceeff; background:#071b2d;
         border:1px solid #2c6090; border-left:4px solid var(--cyan); border-radius:8px; }
       .rocket-game-feedback.failed { color:#ffe6e9; background:#251015;
@@ -2138,6 +2462,29 @@ ui <- fluidPage(
       .rocket-leaderboard-table td:nth-child(3) { text-align:right; font-variant-numeric:tabular-nums; }
       .rocket-game-empty { padding:13px; color:var(--muted); background:#071524;
         border:1px dashed #244d70; border-radius:8px; font-size:11px; line-height:1.45; }
+      .rocket-ascii-manual,.rocket-open-rules { margin:0; }
+      .rocket-ascii-manual>h2,.rocket-open-rules>h2 { margin:4px 0 10px; }
+      .rocket-ascii-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+      .rocket-ascii-grid>div { min-width:0; padding:13px; background:#071524;
+        border:1px solid #244d70; border-radius:8px; }
+      .rocket-ascii-grid h3 { margin:0 0 8px; }
+      .rocket-ascii-grid p { margin:8px 0 0; color:#c8dbea; line-height:1.45; }
+      .rocket-ascii,.rocket-rule-code { margin:0; padding:12px; overflow:auto; color:#dff6ff;
+        background:#02070b; border:1px solid #203b52; border-radius:7px;
+        font-family:Consolas,'Courier New',monospace; font-size:11px; line-height:1.42; }
+      .rocket-ascii code,.rocket-rule-code code { padding:0; color:inherit; background:transparent;
+        border:0; white-space:pre; }
+      .rocket-open-rules>p { max-width:1050px; line-height:1.55; }
+      .rocket-open-rules a { color:#8fceff; }
+      .rocket-rules-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:16px; margin:14px 0; }
+      .rocket-rules-grid>div { min-width:0; }
+      .rocket-rules-grid h3 { margin:0 0 8px; }
+      .rocket-open-rules .formula { margin:10px 0; overflow-x:auto; }
+      .rocket-open-rules table { width:100%; margin:0; }
+      .rocket-open-rules th,.rocket-open-rules td { padding:9px 10px; vertical-align:top; }
+      .rocket-mission-rules { min-width:760px; }
+      .rocket-score-rules { margin-bottom:0; }
       .scope-metric-row { display:grid; grid-template-columns:repeat(4,minmax(0,1fr));
         gap:12px; margin:16px 0 20px; }
       .scope-metric { padding:16px; background:linear-gradient(145deg,#071524,#03080d);
@@ -2609,7 +2956,13 @@ ui <- fluidPage(
       .legacy-mode .rocket-sketch-label,.legacy-mode .rocket-eigen-chip span { color:#444; }
       .legacy-mode .rocket-source-links a { color:#0000ee; }
       .legacy-mode .rocket-game-hero { color:#000; background:#fff; }
-      .legacy-mode .rocket-game-hero p,.legacy-mode .rocket-game-mission p { color:#000; }
+      .legacy-mode .rocket-game-hero p,.legacy-mode .rocket-game-mission p,
+      .legacy-mode .rocket-pattern-benefit span,.legacy-mode .rocket-ascii-grid p { color:#000; }
+      .legacy-mode .rocket-pattern-benefit,.legacy-mode .rocket-game-readiness,
+      .legacy-mode .rocket-game-coach,.legacy-mode .rocket-ascii-grid>div {
+        color:#000; background:#ffffe1; border:2px inset #fff; border-radius:0; }
+      .legacy-mode .rocket-pattern-benefit strong,.legacy-mode .rocket-game-readiness strong,
+      .legacy-mode .rocket-game-coach h3 { color:#000080; }
       .legacy-mode .rocket-game-loop span,.legacy-mode .rocket-game-player,
       .legacy-mode .rocket-game-objective,.legacy-mode .rocket-game-feedback,
       .legacy-mode .rocket-game-empty { color:#000; background:#ffffe1;
@@ -2622,6 +2975,9 @@ ui <- fluidPage(
       .legacy-mode .rocket-leaderboard-table th { color:#800000; }
       .legacy-mode .rocket-leaderboard-table td { color:#000; border-color:#aaa; }
       .legacy-mode .rocket-leaderboard-table td:first-child { color:#000080; }
+      .legacy-mode .rocket-ascii,.legacy-mode .rocket-rule-code {
+        color:#000; background:#fff; border:2px inset #fff; border-radius:0; }
+      .legacy-mode .rocket-open-rules a { color:#0000ee; }
       .legacy-mode .scope-metric,.legacy-mode .scope-callout,
       .legacy-mode .scope-guide-block,.legacy-mode .study-budget>div {
         color:#000; background:#ffffe1; border:2px inset #fff; border-radius:0; }
@@ -2781,6 +3137,10 @@ ui <- fluidPage(
       @media(max-width:1050px){ #main_navigation{grid-template-columns:repeat(3,minmax(0,1fr));position:static;} }
       @media(max-width:950px){
         .lab-plot-pair,.eigen-dashboard,.rocket-dashboard{grid-template-columns:1fr;}
+        .rocket-game-hero{grid-template-columns:1fr;}
+        .rocket-game-hero>.eyebrow,.rocket-game-hero>h2,.rocket-game-hero>p,
+        .rocket-pattern-benefit{grid-column:1;grid-row:auto;}
+        .rocket-ascii-grid,.rocket-rules-grid{grid-template-columns:1fr;}
         .eigen-dashboard>.eigen-hero,.eigen-dashboard .eigen-controls,
         .eigen-dashboard .eigen-3d-controls,.eigen-dashboard .eigen-2d-presets-card,
         .eigen-dashboard .eigen-3d-presets-card,.eigen-dashboard #eigen_metrics,
@@ -2806,6 +3166,7 @@ ui <- fluidPage(
         .rocket-game-grid,.rocket-game-loop{grid-template-columns:1fr;}
         .rocket-game-controls,.rocket-game-arena,.rocket-game-leaderboard{grid-column:1;}
         .rocket-game-objectives{grid-template-columns:1fr;}
+        .rocket-pattern-benefit{grid-template-columns:1fr;}
         .scope-metric-row{grid-template-columns:repeat(2,minmax(0,1fr));}
         .study-budget{grid-template-columns:1fr;}
         .module-heading{grid-template-columns:1fr;} .module-seal{width:46px;height:46px;}
@@ -2858,10 +3219,38 @@ ui <- fluidPage(
           setLegacyMode(false);
         }
 
+        function initializeRocketGameInputSync() {
+          if (document.documentElement.dataset.rocketGameSync === 'true') return;
+          document.documentElement.dataset.rocketGameSync = 'true';
+
+          function syncPlayerName() {
+            var input = document.getElementById('rocket_game_handle');
+            if (input && window.Shiny && Shiny.setInputValue) {
+              Shiny.setInputValue('rocket_game_handle_now', input.value, {priority: 'event'});
+            }
+          }
+
+          document.addEventListener('pointerdown', function (event) {
+            if (event.target && event.target.closest('#rocket_game_start')) syncPlayerName();
+          }, true);
+
+          document.addEventListener('keydown', function (event) {
+            if (event.key !== 'Enter' || !event.target || event.target.id !== 'rocket_game_handle') return;
+            event.preventDefault();
+            syncPlayerName();
+            var startButton = document.getElementById('rocket_game_start');
+            if (startButton) startButton.click();
+          }, true);
+        }
+
         if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', initializeThemeToggle);
+          document.addEventListener('DOMContentLoaded', function () {
+            initializeThemeToggle();
+            initializeRocketGameInputSync();
+          });
         } else {
           initializeThemeToggle();
+          initializeRocketGameInputSync();
         }
       })();
     "))
@@ -5995,12 +6384,14 @@ server <- function(input, output, session) {
     active = FALSE,
     completed = FALSE,
     handle = "",
+    name_error = "",
     mission = 1L,
     score = 0L,
     mission_attempts = 0L,
     total_attempts = 0L,
     started_at = Sys.time(),
     mission_started_at = Sys.time(),
+    transitioning = FALSE,
     feedback = NULL
   )
 
@@ -6011,40 +6402,59 @@ server <- function(input, output, session) {
 
   rocket_game_data <- reactive({
     mission <- current_rocket_game_mission()
-    model <- build_rocket_slosh_model(
-      input$rocket_game_control,
-      mission$slosh_frequency,
-      input$rocket_game_damping,
-      input$rocket_game_lag,
-      mission$coupling
+    controls <- if (isTRUE(rocket_game$transitioning)) {
+      mission$initial
+    } else {
+      c(
+        control = input$rocket_game_control,
+        damping = input$rocket_game_damping,
+        lag = input$rocket_game_lag
+      )
+    }
+    evaluate_rocket_game_candidate(
+      mission, controls[["control"]], controls[["damping"]], controls[["lag"]]
     )
-    model$response <- simulate_rocket_slosh(model$A)
-    model$peak_pitch <- max(abs(model$response$pitch_deg), na.rm = TRUE)
-    model$checks <- c(
-      margin = model$rightmost <= mission$target_real,
-      pitch = model$peak_pitch <= mission$maximum_pitch,
-      control = model$control_frequency >= mission$minimum_control,
-      damping = model$slosh_damping <= mission$maximum_damping,
-      lag = model$actuator_lag >= mission$minimum_lag
-    )
-    model$mission <- mission
-    model
   })
 
   load_rocket_game_mission <- function(index) {
     mission <- rocket_game_missions[[index]]
+    rocket_game$transitioning <- TRUE
     updateSliderInput(session, "rocket_game_control", value = mission$initial[["control"]])
     updateSliderInput(session, "rocket_game_damping", value = mission$initial[["damping"]])
     updateSliderInput(session, "rocket_game_lag", value = mission$initial[["lag"]])
   }
 
+  observe({
+    if (!isTRUE(rocket_game$transitioning)) return()
+    mission <- current_rocket_game_mission()
+    current <- c(
+      control = input$rocket_game_control,
+      damping = input$rocket_game_damping,
+      lag = input$rocket_game_lag
+    )
+    if (all(abs(current - mission$initial[names(current)]) < 1e-9)) {
+      rocket_game$transitioning <- FALSE
+    }
+  })
+
   observeEvent(input$rocket_game_start, {
-    handle <- clean_community_text(input$rocket_game_handle, 24)
+    handle_input <- if (!is.null(input$rocket_game_handle_now)) {
+      input$rocket_game_handle_now
+    } else {
+      input$rocket_game_handle
+    }
+    handle <- clean_community_text(handle_input, 24)
     handle <- sub("^@+", "", handle)
     if (nchar(handle) < 2) {
+      rocket_game$name_error <- "Enter at least two characters. This name appears publicly on the leaderboard."
+      rocket_game$feedback <- list(
+        type = "failed", title = "Player name needed",
+        text = "Add a short public name, then press Start a new three-mission run."
+      )
       showNotification("Enter a public player name with at least two characters.", type = "error")
       return()
     }
+    rocket_game$name_error <- ""
     rocket_game$active <- TRUE
     rocket_game$completed <- FALSE
     rocket_game$handle <- handle
@@ -6061,6 +6471,27 @@ server <- function(input, output, session) {
     load_rocket_game_mission(1L)
   })
 
+  observeEvent(input$rocket_game_reset_mission, {
+    load_rocket_game_mission(rocket_game$mission)
+    rocket_game$feedback <- list(
+      type = "ready", title = "Mission baseline restored",
+      text = "Make one prediction, change one knob, and compare the rightmost diamond before and after."
+    )
+  })
+
+  observe({
+    d <- rocket_game_data()
+    ready_count <- sum(d$checks)
+    label <- if (isTRUE(rocket_game$active) && ready_count == length(d$checks)) {
+      "Lock solution · 5/5 ready"
+    } else if (isTRUE(rocket_game$active)) {
+      sprintf("Check solution · %d/5 ready", ready_count)
+    } else {
+      sprintf("Preview · %d/5 checks pass", ready_count)
+    }
+    updateActionButton(session, "rocket_game_lock", label = label)
+  })
+
   observeEvent(input$rocket_game_lock, {
     if (!isTRUE(rocket_game$active)) {
       showNotification("Enter a player name and start a run first.", type = "warning")
@@ -6072,6 +6503,7 @@ server <- function(input, output, session) {
     if (!all(d$checks)) {
       rocket_game$mission_attempts <- rocket_game$mission_attempts + 1L
       failed_names <- names(d$checks)[!d$checks]
+      coach <- recommend_rocket_game_move(d)
       friendly <- c(
         margin = "stability margin", pitch = "pitch limit", control = "response speed",
         damping = "damping budget", lag = "hardware lag floor"
@@ -6081,21 +6513,15 @@ server <- function(input, output, session) {
         title = "Solution rejected",
         text = paste0(
           "Still missing: ", paste(unname(friendly[failed_names]), collapse = ", "),
-          ". Use the pole map first—the rightmost diamond is usually the fastest clue."
+          ". ", coach$title, ". ", coach$text
         )
       )
       return()
     }
 
     elapsed <- max(1, as.numeric(difftime(Sys.time(), rocket_game$mission_started_at, units = "secs")))
-    margin_bonus <- round(min(160, max(0, (-d$rightmost - abs(d$mission$target_real)) * 900)))
-    time_bonus <- round(max(0, 120 - elapsed))
-    damping_bonus <- round(100 * max(0, 1 - d$slosh_damping / d$mission$maximum_damping))
-    lag_bonus <- round(80 * min(1, d$actuator_lag / .8))
-    control_bonus <- round(90 * max(0, 1 - abs(d$control_frequency - d$mission$minimum_control) / 1.1))
-    attempt_penalty <- 120 * rocket_game$mission_attempts
-    mission_score <- as.integer(max(300, 750 + margin_bonus + time_bonus +
-                                      damping_bonus + lag_bonus + control_bonus - attempt_penalty))
+    scoring <- score_rocket_game_mission(d, rocket_game$mission_attempts, elapsed)
+    mission_score <- scoring$total
     rocket_game$score <- rocket_game$score + mission_score
 
     if (rocket_game$mission < length(rocket_game_missions)) {
@@ -6141,12 +6567,20 @@ server <- function(input, output, session) {
 
   output$rocket_game_player_status <- renderUI({
     if (!nzchar(rocket_game$handle)) {
-      return(div(class = "rocket-game-player", "Enter a name to unlock scoring."))
+      return(div(class = "rocket-game-player",
+        strong("Practice preview"),
+        span(" · Move the sliders freely. Add a name and start when you want the run to count.")
+      ))
     }
     div(class = "rocket-game-player",
       strong(paste0("@", rocket_game$handle)),
       span(sprintf(" · %d points · %d attempts", rocket_game$score, rocket_game$total_attempts))
     )
+  })
+
+  output$rocket_game_name_error <- renderUI({
+    if (!nzchar(rocket_game$name_error)) return(NULL)
+    div(class = "rocket-game-name-error", role = "alert", rocket_game$name_error)
   })
 
   output$rocket_game_mission_header <- renderUI({
@@ -6162,14 +6596,19 @@ server <- function(input, output, session) {
         }
       ),
       h3(mission$title),
-      tags$p(mission$briefing)
+      tags$p(mission$briefing),
+      tags$p(class = "rocket-game-mission-goal",
+        strong("Win condition: "),
+        sprintf("turn all five checks green; the diamond must reach Re(λ) ≤ %.2f.", mission$target_real)
+      )
     )
   })
 
   output$rocket_game_metrics <- renderUI({
     d <- rocket_game_data()
     div(class = "metric-row",
-      div(class = "metric", span("Rightmost Re(λ)"), strong(sprintf("%+.3f s⁻¹", d$rightmost))),
+      div(class = "metric", span("Dominant pole / target"),
+          strong(sprintf("%+.3f / %+.2f", d$rightmost, d$mission$target_real))),
       div(class = "metric", span("Peak |pitch|"),
           strong(if (d$peak_pitch > 999) ">999°" else sprintf("%.1f°", d$peak_pitch))),
       div(class = "metric", span("Run score"), strong(format(rocket_game$score, big.mark = ",")))
@@ -6193,12 +6632,50 @@ server <- function(input, output, session) {
     )
   })
 
+  output$rocket_game_readiness <- renderUI({
+    d <- rocket_game_data()
+    ready_count <- sum(d$checks)
+    message <- if (!isTRUE(rocket_game$active)) {
+      sprintf("Practice preview: %d of 5 checks pass. Start a named run to submit.", ready_count)
+    } else if (ready_count == 5) {
+      "5 of 5 checks pass. Lock this solution to score and advance."
+    } else {
+      sprintf("%d of 5 checks pass. Use the live coach before submitting.", ready_count)
+    }
+    div(
+      class = paste("rocket-game-readiness", if (ready_count == 5) "ready" else ""),
+      strong(message)
+    )
+  })
+
+  output$rocket_game_coach <- renderUI({
+    d <- rocket_game_data()
+    coach <- recommend_rocket_game_move(d)
+    pole_pattern <- if (d$rightmost >= 0) {
+      "The diamond is right of zero: at least one mode grows instead of dying away."
+    } else if (d$rightmost > d$mission$target_real) {
+      "The diamond is left of zero but still right of the mission target: motion decays, but too slowly."
+    } else {
+      "The diamond is left of the mission target: the slowest mode now has the required decay margin."
+    }
+    rhythm_pattern <- if (d$mode_gap < .15) {
+      "The controller and liquid rhythms are crowded, so small knob changes can move the poles sharply."
+    } else {
+      "The controller and liquid rhythms are separated, which usually makes the tradeoff less fragile."
+    }
+    div(class = paste("rocket-game-coach", if (coach$ready) "ready" else ""),
+      div(class = "eyebrow", "Live pattern coach · see → predict → verify"),
+      h3(coach$title),
+      tags$p(pole_pattern, " ", rhythm_pattern, " ", coach$text)
+    )
+  })
+
   output$rocket_game_feedback <- renderUI({
     feedback <- rocket_game$feedback
     if (is.null(feedback)) {
       feedback <- list(
-        type = "ready", title = "How to play",
-        text = "Enter a public player name, start the run, and make all five objectives show a check mark before locking your solution."
+        type = "ready", title = "Your first move",
+        text = "Look at the diamond, predict which one-tick change moves it left, then verify your guess on both graphs. You can practise before entering a name."
       )
     }
     div(class = paste("rocket-game-feedback", if (identical(feedback$type, "failed")) "failed" else ""),

@@ -9,19 +9,7 @@ source("app.R")
 rocket_scores(empty_rocket_scores())
 
 mission_solution <- function(mission, control, damping, lag) {
-  model <- build_rocket_slosh_model(
-    control, mission$slosh_frequency, damping, lag, mission$coupling
-  )
-  response <- simulate_rocket_slosh(model$A)
-  peak_pitch <- max(abs(response$pitch_deg), na.rm = TRUE)
-  checks <- c(
-    margin = model$rightmost <= mission$target_real,
-    pitch = peak_pitch <= mission$maximum_pitch,
-    control = model$control_frequency >= mission$minimum_control,
-    damping = model$slosh_damping <= mission$maximum_damping,
-    lag = model$actuator_lag >= mission$minimum_lag
-  )
-  list(model = model, peak_pitch = peak_pitch, checks = checks)
+  evaluate_rocket_game_candidate(mission, control, damping, lag)
 }
 
 solutions <- list(
@@ -39,12 +27,30 @@ for (index in seq_along(rocket_game_missions)) {
   message(
     sprintf(
       "Mission %d candidate: rightmost=%+.4f, peak=%.3f, checks=%s",
-      index, result$model$rightmost, result$peak_pitch,
+      index, result$rightmost, result$peak_pitch,
       paste(result$checks, collapse = ",")
     )
   )
   stopifnot(all(result$checks))
 }
+
+initial_candidate <- evaluate_rocket_game_candidate(
+  rocket_game_missions[[1]], 1.30, .025, .82
+)
+initial_coach <- recommend_rocket_game_move(initial_candidate)
+stopifnot(!initial_coach$ready)
+stopifnot(nzchar(initial_coach$title))
+stopifnot(initial_coach$predicted_rightmost < initial_candidate$rightmost)
+
+ready_candidate <- evaluate_rocket_game_candidate(
+  rocket_game_missions[[1]], .55, .12, .15
+)
+ready_coach <- recommend_rocket_game_move(ready_candidate)
+stopifnot(ready_coach$ready)
+scoring <- score_rocket_game_mission(ready_candidate, failed_attempts = 2L, elapsed_seconds = 30)
+stopifnot(scoring$parts[["base"]] == 750)
+stopifnot(scoring$parts[["attempts"]] == -240)
+stopifnot(scoring$total == max(300, sum(scoring$parts)))
 
 sample_scores <- data.frame(
   id = as.character(seq_len(14)),
@@ -65,11 +71,15 @@ ui_html <- paste(as.character(ui), collapse = "")
 stopifnot(grepl("Play: Rocket Balancer", ui_html, fixed = TRUE))
 stopifnot(grepl("rocket_game_handle", ui_html, fixed = TRUE))
 stopifnot(grepl("Top 10 players", ui_html, fixed = TRUE))
-stopifnot(grepl("Lock this solution", ui_html, fixed = TRUE))
+stopifnot(grepl("Why this trains pattern recognition", ui_html, fixed = TRUE))
+stopifnot(grepl("liquid slosh loops back", ui_html, fixed = TRUE))
+stopifnot(grepl("Exact scoring", ui_html, fixed = TRUE))
+stopifnot(grepl("rocket_game_reset_mission", ui_html, fixed = TRUE))
+stopifnot(grepl("github.com/immenseforest/finalprepinteractive/blob/main/app.R", ui_html, fixed = TRUE))
 
 shiny::testServer(server, {
   session$setInputs(
-    rocket_game_handle = "TestPilot",
+    rocket_game_handle = "A",
     ui_theme = "dark",
     rocket_game_control = 1.30,
     rocket_game_damping = .025,
@@ -77,13 +87,33 @@ shiny::testServer(server, {
   )
   session$setInputs(rocket_game_start = 1)
   session$flushReact()
+  stopifnot(nzchar(rocket_game$name_error))
+  stopifnot(!isTRUE(rocket_game$active))
+
+  session$setInputs(
+    rocket_game_handle = "TestPilot",
+    rocket_game_control = 1.30
+  )
+  session$setInputs(rocket_game_start = 2)
+  session$flushReact()
 
   player_html <- paste(as.character(output$rocket_game_player_status), collapse = "")
   stopifnot(grepl("@TestPilot", player_html, fixed = TRUE))
   stopifnot(grepl("Mission 1 of 3", paste(as.character(output$rocket_game_mission_header), collapse = ""), fixed = TRUE))
   stopifnot(length(output$rocket_game_plot) > 0)
+  stopifnot(grepl("Live pattern coach", paste(as.character(output$rocket_game_coach), collapse = ""), fixed = TRUE))
 
   for (index in seq_along(solutions)) {
+    if (index > 1) {
+      baseline <- rocket_game_missions[[index]]$initial
+      session$setInputs(
+        rocket_game_control = baseline[["control"]],
+        rocket_game_damping = baseline[["damping"]],
+        rocket_game_lag = baseline[["lag"]]
+      )
+      session$flushReact()
+      stopifnot(!isTRUE(rocket_game$transitioning))
+    }
     solution <- solutions[[index]]
     session$setInputs(
       rocket_game_control = solution[["control"]],
@@ -106,4 +136,4 @@ shiny::testServer(server, {
 })
 
 unlink(test_store, recursive = TRUE, force = TRUE)
-cat("Rocket Balancer missions, scoring, persistence, and top-10 leaderboard passed.\n")
+cat("Rocket Balancer teaching coach, rules, missions, scoring, persistence, and leaderboard passed.\n")
