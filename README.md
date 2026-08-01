@@ -13,6 +13,8 @@ The app includes:
 - A frontier-inspired rocket stability lab that connects eigenvalues to
   low-gravity propellant slosh, control lag, orbital refueling, and a live
   five-state disturbance simulation
+- A three-mission Rocket Balancer mini game with live eigenvalue feedback,
+  named player runs, mastery scoring, and a persistent top-10 leaderboard
 - Widescreen learning cockpits that align related plots side by side while
   automatically stacking them on tablets and phones
 - Exam coverage map with matrix-size frequencies, difficulty proxies,
@@ -30,9 +32,11 @@ shiny::runApp()
 The app uses base R plotting for most labs and Plotly for the interactive
 eigenvalue and rocket-stability cockpits.
 
-## Comment storage
+## Community and game storage
 
 The community board stores comments in `community-data/comments.rds` when the
-host permits file writes. Set `FINALPREP_COMMENT_DIR` to a persistent writable
-directory in production. If persistent storage is unavailable, the app falls
-back safely and explains that comments may reset after a restart or redeploy.
+host permits file writes. Rocket Balancer stores its scores beside it in
+`community-data/rocket_scores.rds`. Set `FINALPREP_COMMENT_DIR` to a persistent
+writable directory in production. If persistent storage is unavailable, the
+app falls back safely and explains that community data may reset after a
+restart or redeploy.

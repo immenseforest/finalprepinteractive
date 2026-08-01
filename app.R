@@ -353,6 +353,70 @@ clean_community_text <- function(value, limit) {
   substr(value, 1, limit)
 }
 
+# ---------- Rocket Balancer leaderboard ----------
+rocket_game_missions <- list(
+  list(
+    title = "Depot approach",
+    briefing = "The tanker is approaching an orbital depot. Keep the pointing response quick enough to dock without letting a lightly damped tank mode take over.",
+    slosh_frequency = 1.10, coupling = .35,
+    target_real = -.08, maximum_pitch = 3,
+    minimum_control = .45, maximum_damping = .18, minimum_lag = .12,
+    initial = c(control = 1.30, damping = .025, lag = .82)
+  ),
+  list(
+    title = "Low-g propellant transfer",
+    briefing = "The receiving tank is partially filled and its liquid rhythm sits close to the attitude-control rhythm. Find stability without buying unlimited damping.",
+    slosh_frequency = .85, coupling = .65,
+    target_real = -.06, maximum_pitch = 3,
+    minimum_control = .70, maximum_damping = .18, minimum_lag = .12,
+    initial = c(control = 1.45, damping = .015, lag = 1.00)
+  ),
+  list(
+    title = "Engine-restart settling burn",
+    briefing = "The vehicle must settle propellant and point rapidly before restart. Coupling is strong, so control authority, liquid damping, and actuator delay must all be balanced.",
+    slosh_frequency = .65, coupling = .75,
+    target_real = -.04, maximum_pitch = 3,
+    minimum_control = .95, maximum_damping = .22, minimum_lag = .10,
+    initial = c(control = 1.60, damping = .010, lag = 1.10)
+  )
+)
+
+empty_rocket_scores <- function() {
+  data.frame(
+    id = character(), created_at = character(), handle = character(),
+    score = integer(), missions = integer(), seconds = numeric(),
+    stringsAsFactors = FALSE
+  )
+}
+
+rocket_score_store_path <- file.path(comment_store_dir, "rocket_scores.rds")
+
+read_rocket_scores <- function() {
+  if (!file.exists(rocket_score_store_path)) return(empty_rocket_scores())
+  tryCatch({
+    scores <- readRDS(rocket_score_store_path)
+    required <- c("id", "created_at", "handle", "score", "missions", "seconds")
+    if (!is.data.frame(scores) || !all(required %in% names(scores))) {
+      stop("Rocket score store has an unexpected structure.")
+    }
+    scores[, required, drop = FALSE]
+  }, error = function(error) empty_rocket_scores())
+}
+
+write_rocket_scores <- function(scores) {
+  tryCatch({
+    saveRDS(scores, rocket_score_store_path)
+    TRUE
+  }, error = function(error) FALSE)
+}
+
+top_rocket_scores <- function(scores, limit = 10L) {
+  if (!nrow(scores)) return(scores)
+  scores <- scores[order(-scores$score, scores$seconds, scores$created_at), , drop = FALSE]
+  scores <- scores[!duplicated(tolower(scores$handle)), , drop = FALSE]
+  head(scores, limit)
+}
+
 # ---------- Six-final scope and difficulty audit ----------
 # A "question group" is one numbered linear-algebra prompt, including all of
 # its subparts. Mixed/abstract groups either combine matrix sizes or state a
@@ -496,6 +560,7 @@ exam_scope_guides <- list(
 
 community_comments <- reactiveVal(read_community_comments())
 community_active_users <- reactiveVal(0L)
+rocket_scores <- reactiveVal(read_rocket_scores())
 
 module_header <- function(number, title, description,
                           route = "Overview  →  Explore  →  Watch  →  Apply") {
@@ -1527,6 +1592,13 @@ source_prompt_story <- list(
       "Under the eigenvalues page, add a simulation that applies eigenvalues to rocket engineering and a frontier problem connected to current SpaceX work, with concise, intuitive guidance."
     ),
     outcome = "Added a frontier-inspired Starship propellant-slosh stability lab with a live five-state matrix, complex-plane pole map, 60-second disturbance response, stable and unstable presets, concise design guidance, and primary NASA and SpaceX context."
+  ),
+  list(
+    phase = "23 · Rocket Balancer", title = "Turn stability intuition into a scored game",
+    prompts = c(
+      "Add a mini game beside the rocket page that challenges the player's understanding of using eigenvalues to balance the rocket, asks for a player name, and displays the top 10 scores."
+    ),
+    outcome = "Built a three-mission Rocket Balancer game with live pole and disturbance plots, escalating stability constraints, immediate objective feedback, efficiency-aware scoring, named player runs, and a persistent best-score leaderboard."
   )
 )
 
@@ -1552,8 +1624,8 @@ source_prompts_page <- function() {
       ),
       div(
         class = "prompt-stats",
-        div(strong("22"), span("build milestones")),
-        div(strong("44"), span("source requests reviewed")),
+        div(strong("23"), span("build milestones")),
+        div(strong("45"), span("source requests reviewed")),
         div(strong("2020–2025"), span("finals represented"))
       )
     ),
@@ -1598,6 +1670,69 @@ source_prompts_page <- function() {
         class = "chat-composer",
         span("This transcript documents the finished build."),
         span(class = "composer-button", "✓")
+      )
+    )
+  )
+}
+
+rocket_game_page <- function() {
+  div(class = "rocket-game-page",
+    div(class = "card rocket-game-hero",
+      div(class = "eyebrow", "Mini game · three-mission mastery run"),
+      h2("Rocket Balancer"),
+      tags$p(
+        "Move every dangerous eigenvalue left without making the vehicle too slow or demanding impossible hardware. Read the poles, tune the controller, and lock your solution."
+      ),
+      div(class = "rocket-game-loop",
+        span(strong("1"), " Read the mission"),
+        span(strong("2"), " Tune three controls"),
+        span(strong("3"), " Lock the eigenvalues"),
+        span(strong("4"), " Climb the leaderboard")
+      )
+    ),
+    div(class = "rocket-game-grid",
+      div(class = "card rocket-game-controls",
+        div(class = "eyebrow", "Player console"),
+        textInput("rocket_game_handle", "Player name", placeholder = "Enter a public game name"),
+        actionButton("rocket_game_start", "Start / restart run", class = "btn-primary"),
+        uiOutput("rocket_game_player_status"),
+        h3("Stability controls"),
+        sliderInput(
+          "rocket_game_control",
+          tagList("Controller speed ωc", help_tip("Higher values correct tilt faster, but excessive speed plus lag can drive a pole into the unstable half-plane.")),
+          min = .3, max = 1.6, value = 1.30, step = .05, ticks = FALSE,
+          post = " rad/s"
+        ),
+        sliderInput(
+          "rocket_game_damping",
+          tagList("Slosh damping ζs", help_tip("Moves the liquid mode left, but the mission limits how much damping hardware you can spend.")),
+          min = .005, max = .25, value = .025, step = .005, ticks = FALSE
+        ),
+        sliderInput(
+          "rocket_game_lag",
+          tagList("Control lag τ", help_tip("Smaller lag reacts sooner, but each mission sets a realistic hardware floor that you may not cross.")),
+          min = .05, max = 1.2, value = .82, step = .01, ticks = FALSE,
+          post = " s"
+        ),
+        actionButton("rocket_game_lock", "Lock this solution", class = "btn-primary btn-block"),
+        tags$p(class = "hint rocket-game-hint",
+          "Score rewards stability margin, few failed attempts, and efficient hardware choices. Speed matters only as a small tie-breaker."
+        )
+      ),
+      div(class = "rocket-game-arena",
+        uiOutput("rocket_game_mission_header"),
+        uiOutput("rocket_game_metrics"),
+        div(class = "card plot-wrap rocket-game-plot-card",
+          plotly::plotlyOutput("rocket_game_plot", height = "430px")
+        ),
+        uiOutput("rocket_game_objectives"),
+        uiOutput("rocket_game_feedback")
+      ),
+      div(class = "card rocket-game-leaderboard",
+        div(class = "eyebrow", "Persistent leaderboard"),
+        h3("Top 10 players"),
+        tags$p(class = "hint", "Best completed run per name. Ties favor the faster run."),
+        uiOutput("rocket_game_leaderboard")
       )
     )
   )
@@ -1946,6 +2081,63 @@ ui <- fluidPage(
       .rocket-source-card p { margin:6px 0 10px; }
       .rocket-source-links { display:flex; flex-wrap:wrap; gap:8px 16px; }
       .rocket-source-links a { color:#8fceff; font-size:11px; }
+      .rocket-game-page { display:grid; gap:16px; }
+      .rocket-game-hero { margin:0; padding:18px 20px;
+        background:radial-gradient(circle at 90% 10%,rgba(77,163,255,.19),transparent 28%),
+          linear-gradient(145deg,#071524,#03080d); }
+      .rocket-game-hero h2 { margin:4px 0 5px; }
+      .rocket-game-hero p { max-width:980px; margin:0; color:#c8dbea; }
+      .rocket-game-loop { display:grid; grid-template-columns:repeat(4,minmax(0,1fr));
+        gap:8px; margin-top:14px; }
+      .rocket-game-loop span { padding:8px 10px; color:#cfe6f8; background:#071b2d;
+        border:1px solid #244d70; border-radius:8px; font-size:11px; }
+      .rocket-game-loop strong { display:inline-grid; place-items:center; width:20px; height:20px;
+        margin-right:5px; color:#041019; background:#6fc9ff; border-radius:50%; }
+      .rocket-game-grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr));
+        gap:14px 16px; align-items:start; }
+      .rocket-game-controls { grid-column:1 / 4; margin:0; padding:16px; }
+      .rocket-game-controls .form-group { margin-bottom:15px; }
+      .rocket-game-controls h3 { margin:16px 0 8px; }
+      .rocket-game-controls .btn { width:100%; }
+      .rocket-game-hint { margin:10px 0 0; line-height:1.45; }
+      .rocket-game-player { margin:10px 0 0; padding:9px 10px; color:#dceeff;
+        background:#071b2d; border-left:3px solid var(--cyan); border-radius:7px; }
+      .rocket-game-player strong { color:#eef7ff; }
+      .rocket-game-arena { grid-column:4 / 10; display:grid; gap:10px; min-width:0; }
+      .rocket-game-mission { margin:0; padding:14px 16px; }
+      .rocket-game-mission h3 { margin:2px 0 5px; }
+      .rocket-game-mission p { margin:0; color:#c8dbea; line-height:1.5; }
+      .rocket-game-arena #rocket_game_metrics .metric-row { margin:0; gap:8px; }
+      .rocket-game-arena #rocket_game_metrics .metric { padding:9px 10px; }
+      .rocket-game-arena #rocket_game_metrics .metric span { font-size:10px; }
+      .rocket-game-arena #rocket_game_metrics .metric strong { font-size:14px; }
+      .rocket-game-plot-card { min-width:0; margin:0; padding:12px; }
+      .rocket-game-objectives { display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:7px; }
+      .rocket-game-objective { display:flex; align-items:flex-start; gap:8px; padding:9px 10px;
+        color:#c9dceb; background:#071524; border:1px solid #244d70; border-radius:7px;
+        font-size:11px; line-height:1.35; }
+      .rocket-game-objective::before { content:'○'; flex:0 0 auto; color:#89a8bf; font-weight:800; }
+      .rocket-game-objective.passed { color:#dffaff; border-color:#277e96; }
+      .rocket-game-objective.passed::before { content:'✓'; color:#48e0f0; }
+      .rocket-game-feedback { margin:0; padding:12px 14px; color:#dceeff; background:#071b2d;
+        border:1px solid #2c6090; border-left:4px solid var(--cyan); border-radius:8px; }
+      .rocket-game-feedback.failed { color:#ffe6e9; background:#251015;
+        border-color:#7a2735; border-left-color:#ff6075; }
+      .rocket-game-feedback h3 { margin:0 0 4px; }
+      .rocket-game-feedback p { margin:0; line-height:1.45; }
+      .rocket-game-leaderboard { grid-column:10 / 13; margin:0; padding:15px; }
+      .rocket-game-leaderboard h3 { margin:3px 0 4px; }
+      .rocket-leaderboard-table { width:100%; margin:10px 0 0; }
+      .rocket-leaderboard-table th,.rocket-leaderboard-table td { padding:7px 5px;
+        border-bottom:1px solid #1f3b53; font-size:11px; }
+      .rocket-leaderboard-table th { color:#8fb7d6; text-transform:uppercase;
+        letter-spacing:.05em; }
+      .rocket-leaderboard-table td { color:#dceeff; }
+      .rocket-leaderboard-table td:first-child { width:26px; color:#69c7ff; font-weight:800; }
+      .rocket-leaderboard-table td:nth-child(3) { text-align:right; font-variant-numeric:tabular-nums; }
+      .rocket-game-empty { padding:13px; color:var(--muted); background:#071524;
+        border:1px dashed #244d70; border-radius:8px; font-size:11px; line-height:1.45; }
       .scope-metric-row { display:grid; grid-template-columns:repeat(4,minmax(0,1fr));
         gap:12px; margin:16px 0 20px; }
       .scope-metric { padding:16px; background:linear-gradient(145deg,#071524,#03080d);
@@ -2416,6 +2608,20 @@ ui <- fluidPage(
       .legacy-mode .rocket-vehicle { border-color:#000080; background:#c0c0c0; }
       .legacy-mode .rocket-sketch-label,.legacy-mode .rocket-eigen-chip span { color:#444; }
       .legacy-mode .rocket-source-links a { color:#0000ee; }
+      .legacy-mode .rocket-game-hero { color:#000; background:#fff; }
+      .legacy-mode .rocket-game-hero p,.legacy-mode .rocket-game-mission p { color:#000; }
+      .legacy-mode .rocket-game-loop span,.legacy-mode .rocket-game-player,
+      .legacy-mode .rocket-game-objective,.legacy-mode .rocket-game-feedback,
+      .legacy-mode .rocket-game-empty { color:#000; background:#ffffe1;
+        border:2px inset #fff; border-radius:0; }
+      .legacy-mode .rocket-game-loop strong { color:#fff; background:#000080; border-radius:0; }
+      .legacy-mode .rocket-game-player strong,.legacy-mode .rocket-game-feedback h3 { color:#000080; }
+      .legacy-mode .rocket-game-objective.passed::before { color:#008080; }
+      .legacy-mode .rocket-game-feedback.failed { color:#000; background:#ffd8d8;
+        border-left:5px solid #800000; }
+      .legacy-mode .rocket-leaderboard-table th { color:#800000; }
+      .legacy-mode .rocket-leaderboard-table td { color:#000; border-color:#aaa; }
+      .legacy-mode .rocket-leaderboard-table td:first-child { color:#000080; }
       .legacy-mode .scope-metric,.legacy-mode .scope-callout,
       .legacy-mode .scope-guide-block,.legacy-mode .study-budget>div {
         color:#000; background:#ffffe1; border:2px inset #fff; border-radius:0; }
@@ -2567,6 +2773,11 @@ ui <- fluidPage(
         .module-heading h2{font-size:22px;}
         .card{margin-bottom:16px;}
       }
+      @media(max-width:1150px){
+        .rocket-game-controls{grid-column:1 / 5;}
+        .rocket-game-arena{grid-column:5 / 13;}
+        .rocket-game-leaderboard{grid-column:1 / 13;}
+      }
       @media(max-width:1050px){ #main_navigation{grid-template-columns:repeat(3,minmax(0,1fr));position:static;} }
       @media(max-width:950px){
         .lab-plot-pair,.eigen-dashboard,.rocket-dashboard{grid-template-columns:1fr;}
@@ -2592,6 +2803,9 @@ ui <- fluidPage(
         .eigen-story-grid{grid-template-columns:1fr;}
         .eigen-equation-grid{grid-template-columns:1fr;}
         .rocket-dashboard #rocket_metrics .metric-row,.rocket-eigen-list{grid-template-columns:1fr;}
+        .rocket-game-grid,.rocket-game-loop{grid-template-columns:1fr;}
+        .rocket-game-controls,.rocket-game-arena,.rocket-game-leaderboard{grid-column:1;}
+        .rocket-game-objectives{grid-template-columns:1fr;}
         .scope-metric-row{grid-template-columns:repeat(2,minmax(0,1fr));}
         .study-budget{grid-template-columns:1fr;}
         .module-heading{grid-template-columns:1fr;} .module-seal{width:46px;height:46px;}
@@ -3694,7 +3908,7 @@ ui <- fluidPage(
             tabPanel("3 · Linear Algebra", value = "linear_algebra",
               module_header("III", "Linear algebra",
                 "Move from systems and determinants to eigenvectors, diagonalization, and structural applications.",
-                "Overview  →  Explore  →  Frontier  →  Watch  →  Apply"),
+                "Overview  →  Explore  →  Frontier  →  Play  →  Watch  →  Apply"),
               tabsetPanel(id = "linear_algebra_navigation", type = "pills",
                 tabPanel("1 · Overview",
                   div(class = "card",
@@ -3974,7 +4188,10 @@ ui <- fluidPage(
                   )
                 ),
                 rocket_stability_tab(),
-                tabPanel("5 · Watch: Videos",
+                tabPanel("5 · Play: Rocket Balancer",
+                  rocket_game_page()
+                ),
+                tabPanel("6 · Watch: Videos",
                   video_lesson_page(
                     "Linear algebra",
                     paste(
@@ -3986,7 +4203,7 @@ ui <- fluidPage(
                     "https://www.video-tutor.net/matrices.html"
                   )
                 ),
-                tabPanel("6 · Apply: Engineering",
+                tabPanel("7 · Apply: Engineering",
                   div(class = "card",
                     div(class = "eyebrow", "Structural engineering"),
                     h2("Solving forces at a truss joint"),
@@ -5771,6 +5988,336 @@ server <- function(input, output, session) {
           span("Ratios compare relative stretch. They change the ellipsoid's proportions, not the three eigenvector lanes.")
         )
       )
+    )
+  })
+
+  rocket_game <- reactiveValues(
+    active = FALSE,
+    completed = FALSE,
+    handle = "",
+    mission = 1L,
+    score = 0L,
+    mission_attempts = 0L,
+    total_attempts = 0L,
+    started_at = Sys.time(),
+    mission_started_at = Sys.time(),
+    feedback = NULL
+  )
+
+  current_rocket_game_mission <- reactive({
+    index <- min(max(1L, rocket_game$mission), length(rocket_game_missions))
+    rocket_game_missions[[index]]
+  })
+
+  rocket_game_data <- reactive({
+    mission <- current_rocket_game_mission()
+    model <- build_rocket_slosh_model(
+      input$rocket_game_control,
+      mission$slosh_frequency,
+      input$rocket_game_damping,
+      input$rocket_game_lag,
+      mission$coupling
+    )
+    model$response <- simulate_rocket_slosh(model$A)
+    model$peak_pitch <- max(abs(model$response$pitch_deg), na.rm = TRUE)
+    model$checks <- c(
+      margin = model$rightmost <= mission$target_real,
+      pitch = model$peak_pitch <= mission$maximum_pitch,
+      control = model$control_frequency >= mission$minimum_control,
+      damping = model$slosh_damping <= mission$maximum_damping,
+      lag = model$actuator_lag >= mission$minimum_lag
+    )
+    model$mission <- mission
+    model
+  })
+
+  load_rocket_game_mission <- function(index) {
+    mission <- rocket_game_missions[[index]]
+    updateSliderInput(session, "rocket_game_control", value = mission$initial[["control"]])
+    updateSliderInput(session, "rocket_game_damping", value = mission$initial[["damping"]])
+    updateSliderInput(session, "rocket_game_lag", value = mission$initial[["lag"]])
+  }
+
+  observeEvent(input$rocket_game_start, {
+    handle <- clean_community_text(input$rocket_game_handle, 24)
+    handle <- sub("^@+", "", handle)
+    if (nchar(handle) < 2) {
+      showNotification("Enter a public player name with at least two characters.", type = "error")
+      return()
+    }
+    rocket_game$active <- TRUE
+    rocket_game$completed <- FALSE
+    rocket_game$handle <- handle
+    rocket_game$mission <- 1L
+    rocket_game$score <- 0L
+    rocket_game$mission_attempts <- 0L
+    rocket_game$total_attempts <- 0L
+    rocket_game$started_at <- Sys.time()
+    rocket_game$mission_started_at <- Sys.time()
+    rocket_game$feedback <- list(
+      type = "ready", title = "Run started",
+      text = "Read the five objectives, tune the poles, then lock your solution."
+    )
+    load_rocket_game_mission(1L)
+  })
+
+  observeEvent(input$rocket_game_lock, {
+    if (!isTRUE(rocket_game$active)) {
+      showNotification("Enter a player name and start a run first.", type = "warning")
+      return()
+    }
+
+    d <- isolate(rocket_game_data())
+    rocket_game$total_attempts <- rocket_game$total_attempts + 1L
+    if (!all(d$checks)) {
+      rocket_game$mission_attempts <- rocket_game$mission_attempts + 1L
+      failed_names <- names(d$checks)[!d$checks]
+      friendly <- c(
+        margin = "stability margin", pitch = "pitch limit", control = "response speed",
+        damping = "damping budget", lag = "hardware lag floor"
+      )
+      rocket_game$feedback <- list(
+        type = "failed",
+        title = "Solution rejected",
+        text = paste0(
+          "Still missing: ", paste(unname(friendly[failed_names]), collapse = ", "),
+          ". Use the pole map first—the rightmost diamond is usually the fastest clue."
+        )
+      )
+      return()
+    }
+
+    elapsed <- max(1, as.numeric(difftime(Sys.time(), rocket_game$mission_started_at, units = "secs")))
+    margin_bonus <- round(min(160, max(0, (-d$rightmost - abs(d$mission$target_real)) * 900)))
+    time_bonus <- round(max(0, 120 - elapsed))
+    damping_bonus <- round(100 * max(0, 1 - d$slosh_damping / d$mission$maximum_damping))
+    lag_bonus <- round(80 * min(1, d$actuator_lag / .8))
+    control_bonus <- round(90 * max(0, 1 - abs(d$control_frequency - d$mission$minimum_control) / 1.1))
+    attempt_penalty <- 120 * rocket_game$mission_attempts
+    mission_score <- as.integer(max(300, 750 + margin_bonus + time_bonus +
+                                      damping_bonus + lag_bonus + control_bonus - attempt_penalty))
+    rocket_game$score <- rocket_game$score + mission_score
+
+    if (rocket_game$mission < length(rocket_game_missions)) {
+      cleared_title <- d$mission$title
+      rocket_game$mission <- rocket_game$mission + 1L
+      rocket_game$mission_attempts <- 0L
+      rocket_game$mission_started_at <- Sys.time()
+      rocket_game$feedback <- list(
+        type = "success", title = paste0(cleared_title, " cleared · +", mission_score),
+        text = "The next vehicle state is loaded. Expect a tighter tradeoff between response speed and slosh stability."
+      )
+      load_rocket_game_mission(rocket_game$mission)
+      return()
+    }
+
+    total_seconds <- max(1, as.numeric(difftime(Sys.time(), rocket_game$started_at, units = "secs")))
+    new_score <- data.frame(
+      id = paste0(format(Sys.time(), "%Y%m%d%H%M%OS6"), "-", substr(session$token, 1, 8)),
+      created_at = format(Sys.time(), "%Y-%m-%d %H:%M UTC", tz = "UTC"),
+      handle = rocket_game$handle,
+      score = as.integer(rocket_game$score),
+      missions = length(rocket_game_missions),
+      seconds = round(total_seconds, 1),
+      stringsAsFactors = FALSE
+    )
+    updated_scores <- rbind(new_score, isolate(rocket_scores()))
+    updated_scores <- updated_scores[order(-updated_scores$score, updated_scores$seconds), , drop = FALSE]
+    updated_scores <- head(updated_scores, 500)
+    rocket_scores(updated_scores)
+    persisted <- write_rocket_scores(updated_scores)
+    rocket_game$active <- FALSE
+    rocket_game$completed <- TRUE
+    rocket_game$feedback <- list(
+      type = "success",
+      title = paste0("Run complete · ", rocket_game$score, " points"),
+      text = if (persisted) {
+        "Your score is recorded. The leaderboard keeps each player's best completed run."
+      } else {
+        "Your score appears for this session, but this host could not persist it after a restart."
+      }
+    )
+  })
+
+  output$rocket_game_player_status <- renderUI({
+    if (!nzchar(rocket_game$handle)) {
+      return(div(class = "rocket-game-player", "Enter a name to unlock scoring."))
+    }
+    div(class = "rocket-game-player",
+      strong(paste0("@", rocket_game$handle)),
+      span(sprintf(" · %d points · %d attempts", rocket_game$score, rocket_game$total_attempts))
+    )
+  })
+
+  output$rocket_game_mission_header <- renderUI({
+    mission <- current_rocket_game_mission()
+    div(class = "card rocket-game-mission",
+      div(class = "eyebrow",
+        if (rocket_game$active) {
+          sprintf("Mission %d of %d", rocket_game$mission, length(rocket_game_missions))
+        } else if (rocket_game$completed) {
+          "Completed run · free practice"
+        } else {
+          "Mission preview · enter a name to score"
+        }
+      ),
+      h3(mission$title),
+      tags$p(mission$briefing)
+    )
+  })
+
+  output$rocket_game_metrics <- renderUI({
+    d <- rocket_game_data()
+    div(class = "metric-row",
+      div(class = "metric", span("Rightmost Re(λ)"), strong(sprintf("%+.3f s⁻¹", d$rightmost))),
+      div(class = "metric", span("Peak |pitch|"),
+          strong(if (d$peak_pitch > 999) ">999°" else sprintf("%.1f°", d$peak_pitch))),
+      div(class = "metric", span("Run score"), strong(format(rocket_game$score, big.mark = ",")))
+    )
+  })
+
+  output$rocket_game_objectives <- renderUI({
+    d <- rocket_game_data()
+    objective_text <- c(
+      margin = sprintf("Stability: rightmost Re(λ) ≤ %.2f", d$mission$target_real),
+      pitch = sprintf("Balance: peak |pitch| ≤ %.0f°", d$mission$maximum_pitch),
+      control = sprintf("Response: ωc ≥ %.2f rad/s", d$mission$minimum_control),
+      damping = sprintf("Budget: ζs ≤ %.2f", d$mission$maximum_damping),
+      lag = sprintf("Hardware: τ ≥ %.2f s", d$mission$minimum_lag)
+    )
+    div(class = "rocket-game-objectives",
+      lapply(names(objective_text), function(name) {
+        div(class = paste("rocket-game-objective", if (d$checks[[name]]) "passed" else ""),
+            objective_text[[name]])
+      })
+    )
+  })
+
+  output$rocket_game_feedback <- renderUI({
+    feedback <- rocket_game$feedback
+    if (is.null(feedback)) {
+      feedback <- list(
+        type = "ready", title = "How to play",
+        text = "Enter a public player name, start the run, and make all five objectives show a check mark before locking your solution."
+      )
+    }
+    div(class = paste("rocket-game-feedback", if (identical(feedback$type, "failed")) "failed" else ""),
+      h3(feedback$title), tags$p(feedback$text)
+    )
+  })
+
+  output$rocket_game_leaderboard <- renderUI({
+    leaders <- top_rocket_scores(rocket_scores(), 10L)
+    if (!nrow(leaders)) {
+      return(div(class = "rocket-game-empty",
+        strong("No completed runs yet."), tags$br(),
+        "Finish all three missions to become the first name on the board."
+      ))
+    }
+    tags$table(class = "rocket-leaderboard-table",
+      tags$thead(tags$tr(tags$th("#"), tags$th("Player"), tags$th("Score"))),
+      tags$tbody(lapply(seq_len(nrow(leaders)), function(index) {
+        tags$tr(
+          tags$td(index),
+          tags$td(paste0("@", leaders$handle[index])),
+          tags$td(format(leaders$score[index], big.mark = ","))
+        )
+      }))
+    )
+  })
+
+  output$rocket_game_plot <- plotly::renderPlotly({
+    d <- rocket_game_data()
+    legacy_plot <- identical(input$ui_theme, "legacy")
+    palette <- if (legacy_plot) {
+      list(background = "#ffffff", text = "#111111", grid = "#d7d7d7",
+           stable = "#006f8a", danger = "#b00020", pitch = "#006f8a", slosh = "#6e2383")
+    } else {
+      list(background = "#05090e", text = "#e9f4ff", grid = "#20354a",
+           stable = "#35d8f2", danger = "#ff6075", pitch = "#35d8f2", slosh = "#9b8cff")
+    }
+    values <- d$eigenvalues
+    real_values <- Re(values)
+    imaginary_values <- Im(values)
+    rightmost_index <- which.max(real_values)[1]
+    plotted_real <- pmax(real_values, -6)
+    colors <- ifelse(real_values < 0, palette$stable, palette$danger)
+    symbols <- ifelse(seq_along(values) == rightmost_index, "diamond", "circle")
+    sizes <- ifelse(seq_along(values) == rightmost_index, 15, 10)
+    pole_text <- vapply(seq_along(values), function(index) {
+      sprintf("λ%d = %+.3f %+.3fi", index, real_values[index], imaginary_values[index])
+    }, character(1))
+
+    pole_plot <- plotly::plot_ly(
+      x = plotted_real, y = imaginary_values, type = "scatter", mode = "markers",
+      text = pole_text, hovertemplate = "%{text}<extra></extra>",
+      marker = list(color = colors, symbol = symbols, size = sizes,
+                    line = list(width = 1, color = palette$text)),
+      showlegend = FALSE
+    )
+
+    response <- d$response
+    plot_cap <- 20
+    pitch_plot <- pmax(pmin(response$pitch_deg, plot_cap), -plot_cap)
+    slosh_plot <- pmax(pmin(response$slosh_deg, plot_cap), -plot_cap)
+    response_plot <- plotly::plot_ly()
+    response_plot <- plotly::add_trace(
+      response_plot, x = response$time, y = pitch_plot, type = "scatter", mode = "lines",
+      name = "Pitch θ", line = list(color = palette$pitch, width = 3),
+      hovertemplate = "t=%{x:.1f} s<br>pitch=%{y:.2f}°<extra></extra>"
+    )
+    response_plot <- plotly::add_trace(
+      response_plot, x = response$time, y = slosh_plot, type = "scatter", mode = "lines",
+      name = "Slosh φ", line = list(color = palette$slosh, width = 2),
+      hovertemplate = "t=%{x:.1f} s<br>slosh=%{y:.2f}°<extra></extra>"
+    )
+
+    figure <- plotly::subplot(
+      pole_plot, response_plot, widths = c(.42, .58), margin = .08,
+      titleX = TRUE, titleY = TRUE
+    )
+    imaginary_limit <- max(2, 1.15 * max(abs(imaginary_values)))
+    visible_peak <- max(abs(c(pitch_plot, slosh_plot)))
+    response_limit <- min(plot_cap, max(3.6, 1.12 * visible_peak))
+    figure <- plotly::layout(
+      figure,
+      paper_bgcolor = palette$background, plot_bgcolor = palette$background,
+      font = list(color = palette$text, family = "Inter, sans-serif", size = 10),
+      margin = list(l = 48, r = 16, b = 44, t = 54),
+      legend = list(
+        orientation = "v", x = .98, y = .98, xanchor = "right", yanchor = "top",
+        bgcolor = if (legacy_plot) "rgba(255,255,255,.82)" else "rgba(5,9,14,.78)",
+        font = list(size = 9)
+      ),
+      xaxis = list(title = "Re(λ)", range = c(-6.2, .65), gridcolor = palette$grid,
+                   zeroline = FALSE, color = palette$text),
+      yaxis = list(title = "Im(λ)", range = c(-imaginary_limit, imaginary_limit),
+                   gridcolor = palette$grid, zerolinecolor = palette$grid, color = palette$text),
+      xaxis2 = list(title = "time (s)", range = c(0, 60), gridcolor = palette$grid,
+                    color = palette$text),
+      yaxis2 = list(title = "angle (°)", range = c(-response_limit, response_limit),
+                    gridcolor = palette$grid, zerolinecolor = palette$grid, color = palette$text),
+      shapes = list(
+        list(type = "line", xref = "x", yref = "y", x0 = 0, x1 = 0,
+             y0 = -imaginary_limit, y1 = imaginary_limit,
+             line = list(color = palette$danger, width = 2)),
+        list(type = "line", xref = "x2", yref = "y2", x0 = 0, x1 = 60,
+             y0 = 3, y1 = 3, line = list(color = palette$danger, width = 1, dash = "dot")),
+        list(type = "line", xref = "x2", yref = "y2", x0 = 0, x1 = 60,
+             y0 = -3, y1 = -3, line = list(color = palette$danger, width = 1, dash = "dot"))
+      ),
+      annotations = list(
+        list(xref = "paper", yref = "paper", x = .18, y = 1.13,
+             text = "Eigenvalue map", showarrow = FALSE,
+             font = list(color = palette$text, size = 11)),
+        list(xref = "paper", yref = "paper", x = .75, y = 1.13,
+             text = "60-second balance test", showarrow = FALSE,
+             font = list(color = palette$text, size = 11))
+      )
+    )
+    plotly::config(
+      figure, displaylogo = FALSE, responsive = TRUE,
+      modeBarButtonsToRemove = c("lasso2d", "select2d", "autoScale2d", "toggleSpikelines")
     )
   })
 
