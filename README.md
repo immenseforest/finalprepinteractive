@@ -10,6 +10,8 @@ The app includes:
 - Linear-system lab and a concept-first eigenvalue pattern decoder with
   transformed-circle and camera-controlled 3D sphere simulations, stable
   eigen-directions, live matrices/equations, presets, and prediction checks
+- Widescreen learning cockpits that align related plots side by side while
+  automatically stacking them on tablets and phones
 - Exam coverage map with matrix-size frequencies, difficulty proxies,
   efficiency stop rules, a study-time allocator, and a practice generator
 - Five 50-mark mock finals with verified answers, displayed algebra, and tutorial matches

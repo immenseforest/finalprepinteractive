@@ -48,6 +48,12 @@ stopifnot(eigenvalue_short_effect(-0.5) == "flip + shrink")
 stopifnot(eigenvalue_short_effect(0) == "flatten")
 stopifnot(eigenvalue_short_effect(1) == "same length")
 
+ui_html <- paste(as.character(ui), collapse = "")
+stopifnot(grepl("eigen-dashboard", ui_html, fixed = TRUE))
+stopifnot(grepl("lab-plot-pair", ui_html, fixed = TRUE))
+stopifnot(grepl("eigen_plot", ui_html, fixed = TRUE))
+stopifnot(grepl("eigen_3d_plot", ui_html, fixed = TRUE))
+
 # The 3D simulator preserves the same eigenvalue rules in three dimensions.
 default_3d <- build_eigen_model_3d(30, 3, 0.75, -1.5)
 stopifnot(near(t(default_3d$P) %*% default_3d$P, diag(3)))

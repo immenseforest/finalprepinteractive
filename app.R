@@ -1421,6 +1421,13 @@ source_prompt_story <- list(
       "Add a 3D simulator to the eigenvalue page that dynamically shows the matrix and equations for the user's inputs, with the goal of improving pattern recognition."
     ),
     outcome = "Extended the stable eigendirection model into three dimensions, added a camera-controlled sphere-to-ellipsoid simulator, displayed the live 3 by 3 matrix and eigen-equations, and decoded rank, determinant sign, volume, repeated values, reflections, and flattened dimensions."
+  ),
+  list(
+    phase = "20 · One-screen learning cockpits", title = "Keep related graphs in sight together",
+    prompts = c(
+      "Redesign page arrangements so the most important information and graphs fit together on one screen, including placing the 2D and 3D eigenvalue graphs side by side."
+    ),
+    outcome = "Reorganized the eigenvalue lab into a synchronized widescreen dashboard with compact controls, aligned metrics, side-by-side 2D and 3D plots, and paired live explanations. Also paired the Laplace, property, and suspension graph sets and reduced desktop navigation overhead."
   )
 )
 
@@ -1446,8 +1453,8 @@ source_prompts_page <- function() {
       ),
       div(
         class = "prompt-stats",
-        div(strong("19"), span("build milestones")),
-        div(strong("41"), span("source requests reviewed")),
+        div(strong("20"), span("build milestones")),
+        div(strong("42"), span("source requests reviewed")),
         div(strong("2020–2025"), span("finals represented"))
       )
     ),
@@ -1687,6 +1694,74 @@ ui <- fluidPage(
       .eigen-equation-grid .formula { min-width:0; margin:0; padding:11px;
         background:#071524; border-color:#244d70; font-size:12px; }
       .eigen-3d-story { margin-bottom:20px; }
+      .lab-plot-pair { display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:14px; align-items:stretch; }
+      .lab-plot-pair>.card { min-width:0; height:100%; margin-bottom:0; }
+      .eigen-dashboard { display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:14px 16px; align-items:start; }
+      .eigen-dashboard>.row,.eigen-dashboard>.row>[class*='col-'] {
+        display:contents; float:none; width:auto; }
+      .eigen-dashboard>.eigen-hero { order:1; grid-column:1 / -1; display:grid;
+        grid-template-columns:minmax(0,1fr) minmax(230px,320px); column-gap:22px;
+        margin:0; padding:16px 20px; }
+      .eigen-dashboard>.eigen-hero>.eyebrow,
+      .eigen-dashboard>.eigen-hero>h2,
+      .eigen-dashboard>.eigen-hero>p,
+      .eigen-dashboard>.eigen-hero>.eigen-memory-line { grid-column:1; }
+      .eigen-dashboard>.eigen-hero>h2 { margin:4px 0 5px; }
+      .eigen-dashboard>.eigen-hero>p { margin:0; line-height:1.48; }
+      .eigen-dashboard>.eigen-hero>.formula { grid-column:2; grid-row:1 / 5;
+        align-self:center; margin:0; padding:15px 17px; }
+      .eigen-dashboard>.eigen-hero>.eigen-memory-line { margin-top:10px; padding:9px 12px; }
+      .eigen-dashboard>.eigen-3d-hero { display:none; }
+      .eigen-dashboard .eigen-controls { order:2; grid-column:1; display:grid;
+        grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px 14px; margin:0; padding:15px 17px; }
+      .eigen-dashboard .eigen-3d-controls { order:2; grid-column:2; display:grid;
+        grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px 14px; margin:0; padding:15px 17px; }
+      .eigen-dashboard .eigen-controls>h3,.eigen-dashboard .eigen-controls>.hint,
+      .eigen-dashboard .eigen-3d-controls>h3,.eigen-dashboard .eigen-3d-controls>.hint {
+        grid-column:1 / -1; }
+      .eigen-dashboard .eigen-controls>h3,.eigen-dashboard .eigen-3d-controls>h3 {
+        margin:0 0 3px; }
+      .eigen-dashboard .eigen-controls>.hint,.eigen-dashboard .eigen-3d-controls>.hint {
+        margin:0 0 3px; line-height:1.4; }
+      .eigen-dashboard .eigen-controls .form-group,
+      .eigen-dashboard .eigen-3d-controls .form-group { min-width:0; margin:0; }
+      .eigen-dashboard .eigen-2d-presets-card { order:3; grid-column:1; }
+      .eigen-dashboard .eigen-3d-presets-card { order:3; grid-column:2; }
+      .eigen-dashboard .eigen-2d-presets-card,
+      .eigen-dashboard .eigen-3d-presets-card { margin:0; padding:11px 15px; }
+      .eigen-dashboard .eigen-2d-presets-card>summary,
+      .eigen-dashboard .eigen-3d-presets-card>summary { color:#dceeff; cursor:pointer;
+        font-weight:750; }
+      .eigen-dashboard .eigen-2d-presets-card>h3,
+      .eigen-dashboard .eigen-3d-presets-card>h3 { margin-top:14px; }
+      .eigen-dashboard #eigen_metrics { order:4; grid-column:1; }
+      .eigen-dashboard #eigen_3d_metrics { order:4; grid-column:2; }
+      .eigen-dashboard #eigen_metrics .metric-row,
+      .eigen-dashboard #eigen_3d_metrics .metric-row { margin:0; gap:8px; }
+      .eigen-dashboard #eigen_metrics .metric,
+      .eigen-dashboard #eigen_3d_metrics .metric { padding:9px 11px; border-radius:9px; }
+      .eigen-dashboard #eigen_metrics .metric span,
+      .eigen-dashboard #eigen_3d_metrics .metric span { margin-bottom:3px; font-size:10px; }
+      .eigen-dashboard #eigen_metrics .metric strong,
+      .eigen-dashboard #eigen_3d_metrics .metric strong { font-size:14px; }
+      .eigen-dashboard .eigen-plot-card { order:5; grid-column:1; }
+      .eigen-dashboard .eigen-3d-plot-card { order:5; grid-column:2; }
+      .eigen-dashboard .eigen-plot-card,
+      .eigen-dashboard .eigen-3d-plot-card { min-width:0; min-height:0; margin:0; padding:15px; }
+      .eigen-dashboard .eigen-plot-card h3,
+      .eigen-dashboard .eigen-3d-plot-card h3 { margin-bottom:8px; }
+      .eigen-dashboard #eigen_plot,.eigen-dashboard #eigen_3d_plot { height:390px!important; }
+      .eigen-dashboard #eigen_story { order:6; grid-column:1; }
+      .eigen-dashboard #eigen_3d_story { order:6; grid-column:2; }
+      .eigen-dashboard #eigen_story>.eigen-story,
+      .eigen-dashboard #eigen_3d_story>.eigen-story { height:100%; margin:0; }
+      .eigen-dashboard #eigen_3d_equations { order:7; grid-column:1 / -1; }
+      .eigen-dashboard #eigen_3d_equations>.card { margin:0; }
+      .eigen-dashboard>.eigen-hack-grid { order:8; grid-column:1 / -1; margin:0; }
+      .eigen-dashboard .eigen-quiz { order:9; grid-column:1 / -1; margin:0; }
+      .eigen-dashboard>.eigen-exam-guide { order:10; grid-column:1 / -1; margin:0; }
       .scope-metric-row { display:grid; grid-template-columns:repeat(4,minmax(0,1fr));
         gap:12px; margin:16px 0 20px; }
       .scope-metric { padding:16px; background:linear-gradient(145deg,#071524,#03080d);
@@ -2273,7 +2348,35 @@ ui <- fluidPage(
       .legacy-mode .chat-composer { color:#444; background:#fff; border:2px inset #fff;
         border-radius:0; }
       .legacy-mode .composer-button { color:#fff; background:#000080; border-radius:0; }
+      @media(min-width:1200px){
+        .hero{padding:28px max(24px,calc((100vw - 1460px)/2));}
+        .content{max-width:1460px;padding:20px 24px 34px;}
+        #main_navigation{top:6px;margin-bottom:17px;padding:7px;}
+        #main_navigation>li>a{min-height:44px;padding:7px 8px;}
+        #laplace_navigation,#differential_navigation,#linear_algebra_navigation,
+        #reference_navigation,#exam_navigation{margin-bottom:15px;padding:7px;}
+        #laplace_navigation>li>a,#differential_navigation>li>a,
+        #linear_algebra_navigation>li>a,#reference_navigation>li>a,
+        #exam_navigation>li>a{min-height:41px;padding:7px 10px;}
+        .module-heading{margin:0 0 14px;padding:13px 17px;}
+        .module-seal{width:46px;height:46px;font-size:19px;}
+        .module-heading h2{font-size:22px;}
+        .card{margin-bottom:16px;}
+      }
       @media(max-width:1050px){ #main_navigation{grid-template-columns:repeat(3,minmax(0,1fr));position:static;} }
+      @media(max-width:950px){
+        .lab-plot-pair,.eigen-dashboard{grid-template-columns:1fr;}
+        .eigen-dashboard>.eigen-hero,.eigen-dashboard .eigen-controls,
+        .eigen-dashboard .eigen-3d-controls,.eigen-dashboard .eigen-2d-presets-card,
+        .eigen-dashboard .eigen-3d-presets-card,.eigen-dashboard #eigen_metrics,
+        .eigen-dashboard #eigen_3d_metrics,.eigen-dashboard .eigen-plot-card,
+        .eigen-dashboard .eigen-3d-plot-card,.eigen-dashboard #eigen_story,
+        .eigen-dashboard #eigen_3d_story,.eigen-dashboard #eigen_3d_equations,
+        .eigen-dashboard>.eigen-hack-grid,.eigen-dashboard .eigen-quiz,
+        .eigen-dashboard>.eigen-exam-guide{grid-column:1!important;}
+        .eigen-dashboard>.eigen-hero{grid-template-columns:1fr;}
+        .eigen-dashboard>.eigen-hero>.formula{grid-column:1;grid-row:auto;margin-top:10px;}
+      }
       @media(max-width:800px){ .concept,.video-grid{grid-template-columns:1fr;} .hero{padding:30px 20px;}
         .content{padding:22px 16px;} .metric-row{grid-template-columns:1fr;}
         .eigen-hack-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
@@ -2580,12 +2683,14 @@ ui <- fluidPage(
                   )
                 ),
                 column(8,
+                  div(class = "lab-plot-pair",
                   div(class = "card plot-wrap",
                       h3("Time domain  f(t)", help_tip("This is the signal as you would watch it happen on a clock, from one moment to the next.")),
                       plotOutput("time_plot", height = 300)),
                   div(class = "card plot-wrap",
                       h3("Laplace domain  F(s)", help_tip("This is the same signal translated into a math map that makes patterns, decay, and oscillation easier to work with.")),
                       plotOutput("laplace_plot", height = 300))
+                  )
                 )
               )
             ),
@@ -2608,11 +2713,13 @@ ui <- fluidPage(
                   )
                 ),
                 column(8,
+                  div(class = "lab-plot-pair",
                   div(class = "card plot-wrap", h3("Original and shifted signals"),
                       plotOutput("shift_plot", height = 360)),
                   div(class = "card plot-wrap",
                       h3("Transform magnitude", help_tip("Magnitude means how strong or large the transformed signal is at each value of s.")),
                       plotOutput("shift_laplace_plot", height = 300))
+                  )
                 )
               )
             ),
@@ -2719,6 +2826,7 @@ ui <- fluidPage(
                 ),
                 column(8,
                   uiOutput("suspension_metrics"),
+                  div(class = "lab-plot-pair",
                   div(class = "card plot-wrap",
                       h3("Vehicle-body displacement", help_tip("Displacement is how far the car body moves away from its resting position after the bump pushes it.")),
                       plotOutput("suspension_plot", height = 350)),
@@ -2726,6 +2834,7 @@ ui <- fluidPage(
                       h3("Frequency response of the suspension",
                          help_tip("Imagine shaking the car slowly, then faster and faster. This graph shows which shaking speeds make the car move a little and which make it bounce a lot.")),
                       plotOutput("frequency_plot", height = 300))
+                  )
                 )
               ),
               div(class = "card",
@@ -3336,6 +3445,7 @@ ui <- fluidPage(
                   )
                 ),
                 tabPanel("3 · Explore: Eigenvalues",
+                  div(class = "eigen-dashboard",
                   div(class = "card eigen-hero",
                     div(class = "eyebrow", "Geometric intuition · exam shortcut · 6/6 finals"),
                     h2("Eigenvalues without the fog"),
@@ -3404,7 +3514,8 @@ ui <- fluidPage(
                           post = "°"
                         )
                       ),
-                      div(class = "card",
+                      tags$details(class = "card eigen-2d-presets-card",
+                        tags$summary("2D guided experiments"),
                         h3("High-impact experiments"),
                         tags$p(class = "hint", "Use these in order and predict before clicking."),
                         div(class = "preset-actions eigen-presets",
@@ -3486,7 +3597,8 @@ ui <- fluidPage(
                           post = "°"
                         )
                       ),
-                      div(class = "card",
+                      tags$details(class = "card eigen-3d-presets-card",
+                        tags$summary("3D pattern presets"),
                         h3("Pattern-recognition presets"),
                         tags$p(class = "hint", "Predict the shape and determinant sign before clicking."),
                         div(class = "preset-actions eigen-presets",
@@ -3544,6 +3656,7 @@ ui <- fluidPage(
                         )
                       )
                     )
+                  )
                   )
                 ),
                 tabPanel("4 · Watch: Videos",
