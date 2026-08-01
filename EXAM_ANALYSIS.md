@@ -120,8 +120,9 @@ The app maps these findings into:
 - Differential Equations overview, characteristic-root lab, and phase lab
 - Linear Algebra overview, system lab, and an eigenvalue pattern decoder that
   separates eigenvector direction from eigenvalue scale/sign, shows the unit
-  circle transforming, and teaches label swapping, singularity, and repeated
-  eigenvalues through presets and prediction checks
+  circle and unit sphere transforming, displays the live 2 by 2 and 3 by 3
+  matrices/equations, and teaches label swapping, reflections, rank loss,
+  singularity, and repeated eigenvalues through presets and prediction checks
 - Exam Coach with a six-year coverage table, mastery checklist, and tiered
   practice generator
 - Question-level matrix-size counts, marks-based demand statistics, method

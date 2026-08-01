@@ -150,6 +150,37 @@ build_eigen_model <- function(angle_deg, lambda1, lambda2, probe_angle_deg) {
   )
 }
 
+build_eigen_model_3d <- function(angle_deg, lambda1, lambda2, lambda3) {
+  angle <- angle_deg * pi / 180
+  v1 <- c(cos(angle), sin(angle), 0)
+  v2 <- c(-sin(angle), cos(angle), 0)
+  v3 <- c(0, 0, 1)
+  P <- cbind(v1, v2, v3)
+  P[abs(P) < 1e-12] <- 0
+  values <- c(lambda1, lambda2, lambda3)
+  D <- diag(values, nrow = 3)
+  A <- P %*% D %*% t(P)
+  A[abs(A) < 1e-12] <- 0
+  tolerance <- 1e-8
+  rank <- sum(abs(values) > tolerance)
+  negative_count <- sum(values < -tolerance)
+  zero_count <- sum(abs(values) <= tolerance)
+
+  list(
+    A = A,
+    P = P,
+    D = D,
+    values = values,
+    vectors = P,
+    rank = rank,
+    negative_count = negative_count,
+    zero_count = zero_count,
+    determinant = prod(values),
+    trace = sum(values),
+    angle_deg = angle_deg
+  )
+}
+
 eigenvalue_effect <- function(value) {
   magnitude <- abs(value)
   size_word <- if (magnitude < 1e-8) {
@@ -1383,6 +1414,13 @@ source_prompt_story <- list(
       "Develop the linear-algebra eigenvalue page into a high-impact study hacker with straightforward insights and ELI5 explanations, including why v1 and v2 seem to change direction differently."
     ),
     outcome = "Separated eigenvector direction from eigenvalue scaling, visualized the transformed unit circle and a non-eigenvector probe, explained label swapping and sign flips, and added prediction presets, a mini-check, and exam-speed shortcuts."
+  ),
+  list(
+    phase = "19 · 3D eigensystem simulator", title = "Turn eigenvalue patterns into spatial instincts",
+    prompts = c(
+      "Add a 3D simulator to the eigenvalue page that dynamically shows the matrix and equations for the user's inputs, with the goal of improving pattern recognition."
+    ),
+    outcome = "Extended the stable eigendirection model into three dimensions, added a camera-controlled sphere-to-ellipsoid simulator, displayed the live 3 by 3 matrix and eigen-equations, and decoded rank, determinant sign, volume, repeated values, reflections, and flattened dimensions."
   )
 )
 
@@ -1408,8 +1446,8 @@ source_prompts_page <- function() {
       ),
       div(
         class = "prompt-stats",
-        div(strong("18"), span("build milestones")),
-        div(strong("40"), span("source requests reviewed")),
+        div(strong("19"), span("build milestones")),
+        div(strong("41"), span("source requests reviewed")),
         div(strong("2020–2025"), span("finals represented"))
       )
     ),
@@ -1630,6 +1668,25 @@ ui <- fluidPage(
       .eigen-story-block span { color:#c8dbea; font-size:12px; line-height:1.5; }
       .eigen-story .formula { margin-top:12px; }
       .eigen-exam-guide table { margin-bottom:0; }
+      .eigen-3d-hero { margin-top:28px; overflow:hidden;
+        background:radial-gradient(circle at 92% 10%,rgba(111,124,255,.2),transparent 34%),
+          linear-gradient(145deg,#071524,#03080d); }
+      .eigen-3d-hero p { max-width:980px; color:#c8dbea; line-height:1.65; }
+      .eigen-3d-lab { margin-top:0; }
+      .eigen-3d-controls .form-group { margin-bottom:20px; }
+      .eigen-3d-plot-card { overflow:hidden; }
+      .eigen-3d-legend .legend-sphere::before { height:0; border-top:2px dashed #bfd3e4;
+        background:none; }
+      .eigen-3d-legend .legend-shape::before { background:#38d9ff; }
+      .eigen-3d-legend .legend-v3::before { background:#d485ff; }
+      .eigen-3d-equations { overflow:hidden; }
+      .eigen-3d-equations h3 { margin:4px 0 12px; }
+      .eigen-3d-equations>.formula { margin:10px 0; background:#040b12; }
+      .eigen-equation-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+        gap:9px; margin-top:10px; }
+      .eigen-equation-grid .formula { min-width:0; margin:0; padding:11px;
+        background:#071524; border-color:#244d70; font-size:12px; }
+      .eigen-3d-story { margin-bottom:20px; }
       .scope-metric-row { display:grid; grid-template-columns:repeat(4,minmax(0,1fr));
         gap:12px; margin:16px 0 20px; }
       .scope-metric { padding:16px; background:linear-gradient(145deg,#071524,#03080d);
@@ -2067,7 +2124,14 @@ ui <- fluidPage(
       .legacy-mode .eigen-legend .legend-shape::before { background:#008080; }
       .legacy-mode .eigen-legend .legend-v1::before { background:#0000cc; }
       .legacy-mode .eigen-legend .legend-v2::before { background:#800080; }
+      .legacy-mode .eigen-legend .legend-v3::before { background:#b03030; }
       .legacy-mode .eigen-legend .legend-probe::before { background:#000; }
+      .legacy-mode .eigen-3d-hero { background:#fff; }
+      .legacy-mode .eigen-3d-hero p { color:#000; }
+      .legacy-mode .eigen-3d-equations>.formula,
+      .legacy-mode .eigen-equation-grid .formula { color:#000; background:#ffffe1;
+        border:2px inset #fff; border-radius:0; }
+      .legacy-mode .eigen-3d-legend .legend-sphere::before { border-color:#777; }
       .legacy-mode .eigen-feedback { border-radius:0; }
       .legacy-mode .eigen-feedback.correct { color:#000; background:#ccffff;
         border:2px inset #fff; }
@@ -2214,6 +2278,7 @@ ui <- fluidPage(
         .content{padding:22px 16px;} .metric-row{grid-template-columns:1fr;}
         .eigen-hack-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
         .eigen-story-grid{grid-template-columns:1fr;}
+        .eigen-equation-grid{grid-template-columns:1fr;}
         .scope-metric-row{grid-template-columns:repeat(2,minmax(0,1fr));}
         .study-budget{grid-template-columns:1fr;}
         .module-heading{grid-template-columns:1fr;} .module-seal{width:46px;height:46px;}
@@ -3383,6 +3448,74 @@ ui <- fluidPage(
                         )
                       ),
                       uiOutput("eigen_story")
+                    )
+                  ),
+                  div(class = "card eigen-3d-hero",
+                    div(class = "eyebrow", "New · spatial pattern recognition"),
+                    h2("3D eigenvalue simulator"),
+                    tags$p(
+                      strong("ELI5: "),
+                      "Imagine a soft ball with three painted arrows through it. The matrix may stretch, shrink, flip, or flatten the ball along those three special arrow-lines. Those lines are the eigenvectors; the three instructions are the eigenvalues."
+                    ),
+                    div(class = "eigen-memory-line",
+                      strong("3D memory hack:"),
+                      span("P aims the three lanes; D changes their lengths; A = PDPᵀ performs both jobs at once.")
+                    )
+                  ),
+                  fluidRow(class = "eigen-3d-lab",
+                    column(4,
+                      div(class = "card eigen-3d-controls",
+                        h3(tagList("Add the third dimension",
+                          help_tip("The controls above still set θ, λ1, and λ2. This slider gives the vertical eigenvector v3 its own scale-and-flip instruction."))),
+                        tags$p(class = "hint",
+                          "The simulator reuses θ, λ₁, and λ₂ from the 2D lab above, then adds the vertical lane v₃."),
+                        sliderInput(
+                          "eig_lambda3",
+                          tagList("Eigenvalue λ₃", help_tip("Scales the vertical v3 lane. Negative flips it downward; zero crushes that dimension flat.")),
+                          min = -4, max = 4, value = -1.5, step = .25, ticks = FALSE
+                        ),
+                        h3("Move the camera"),
+                        sliderInput(
+                          "eig_3d_azimuth", "Turn left ↔ right",
+                          min = 0, max = 360, value = 42, step = 2, ticks = FALSE,
+                          post = "°"
+                        ),
+                        sliderInput(
+                          "eig_3d_elevation", "Look low ↕ high",
+                          min = 10, max = 80, value = 25, step = 1, ticks = FALSE,
+                          post = "°"
+                        )
+                      ),
+                      div(class = "card",
+                        h3("Pattern-recognition presets"),
+                        tags$p(class = "hint", "Predict the shape and determinant sign before clicking."),
+                        div(class = "preset-actions eigen-presets",
+                          actionButton("eig_3d_preset_ellipsoid", "1 · Ellipsoid"),
+                          actionButton("eig_3d_preset_pancake", "2 · Pancake"),
+                          actionButton("eig_3d_preset_flip", "3 · One flip"),
+                          actionButton("eig_3d_preset_uniform", "4 · Uniform")
+                        )
+                      )
+                    ),
+                    column(8,
+                      uiOutput("eigen_3d_metrics"),
+                      div(class = "card plot-wrap eigen-3d-plot-card",
+                        h3("Unit sphere in → transformed surface out"),
+                        div(class = "eigen-legend eigen-3d-legend",
+                          span(class = "legend-sphere", "input sphere"),
+                          span(class = "legend-shape", "A(sphere)"),
+                          span(class = "legend-v1", "λ₁v₁"),
+                          span(class = "legend-v2", "λ₂v₂"),
+                          span(class = "legend-v3", "λ₃v₃")
+                        ),
+                        div(
+                          role = "img",
+                          `aria-label` = "A three-dimensional unit sphere and its transformed ellipsoid, disk, line, or point, with the three eigenvector axes drawn through it.",
+                          plotOutput("eigen_3d_plot", height = 560)
+                        )
+                      ),
+                      uiOutput("eigen_3d_equations"),
+                      uiOutput("eigen_3d_story")
                     )
                   ),
                   div(class = "card eigen-exam-guide",
@@ -4743,6 +4876,15 @@ server <- function(input, output, session) {
     )
   })
 
+  eigen_3d_data <- reactive({
+    build_eigen_model_3d(
+      input$eig_angle,
+      input$eig_lambda1,
+      input$eig_lambda2,
+      input$eig_lambda3
+    )
+  })
+
   output$eigen_metrics <- renderUI({
     d <- eigen_data()
     probe_metric <- if (is.na(d$line_turn)) {
@@ -4919,6 +5061,234 @@ server <- function(input, output, session) {
     )
   })
 
+  output$eigen_3d_metrics <- renderUI({
+    d <- eigen_3d_data()
+    div(class = "metric-row eigen-3d-metrics",
+      div(class = "metric",
+        span("λ₃ job on v₃"),
+        strong(sprintf("%.2f · %s", d$values[3], eigenvalue_short_effect(d$values[3])))
+      ),
+      div(class = "metric",
+        span("Remaining dimensions (rank)"),
+        strong(sprintf("%d of 3", d$rank))
+      ),
+      div(class = "metric",
+        span("det(A) = λ₁λ₂λ₃"),
+        strong(sprintf("%.2f", d$determinant))
+      )
+    )
+  })
+
+  output$eigen_3d_plot <- renderPlot({
+    d <- eigen_3d_data()
+    legacy_plot <- identical(input$ui_theme, "legacy")
+    palette <- if (legacy_plot) {
+      list(
+        background = "#ffffff", axis = "#222222", text = "#000000",
+        grid = "#b8b8b8", sphere = "#777777", shape = "#008080",
+        v1 = "#0000cc", v2 = "#800080", v3 = "#b03030"
+      )
+    } else {
+      list(
+        background = plot_bg, axis = plot_axis, text = plot_text,
+        grid = plot_grid, sphere = "#bfd3e4", shape = "#38d9ff",
+        v1 = "#58aaff", v2 = "#8d96ff", v3 = "#ee9cff"
+      )
+    }
+
+    plot_limit <- max(1.35, 1.18 * max(abs(d$values)))
+    par(
+      bg = palette$background, fg = palette$axis,
+      col.axis = palette$axis, col.lab = palette$text,
+      mar = c(2.5, 2.5, 1.5, 2.5), family = "sans"
+    )
+    view <- persp(
+      x = c(-plot_limit, plot_limit),
+      y = c(-plot_limit, plot_limit),
+      z = matrix(0, nrow = 2, ncol = 2),
+      xlim = c(-plot_limit, plot_limit),
+      ylim = c(-plot_limit, plot_limit),
+      zlim = c(-plot_limit, plot_limit),
+      theta = input$eig_3d_azimuth,
+      phi = input$eig_3d_elevation,
+      expand = .72, scale = TRUE,
+      col = NA, border = NA, box = TRUE, axes = TRUE,
+      ticktype = "detailed", nticks = 4,
+      xlab = "x₁", ylab = "x₂", zlab = "x₃"
+    )
+
+    project_line <- function(points, color, width = 1, type = 1) {
+      projected <- trans3d(points[1, ], points[2, ], points[3, ], pmat = view)
+      lines(projected$x, projected$y, col = color, lwd = width, lty = type)
+    }
+    sphere_point <- function(longitude, latitude) {
+      rbind(
+        cos(longitude) * cos(latitude),
+        sin(longitude) * cos(latitude),
+        rep(sin(latitude), length(longitude))
+      )
+    }
+    draw_wireframe <- function(transform, color, width, type) {
+      longitude <- seq(0, 2 * pi, length.out = 181)
+      for (latitude in seq(-pi / 2, pi / 2, length.out = 9)) {
+        project_line(transform %*% sphere_point(longitude, latitude), color, width, type)
+      }
+      latitude <- seq(-pi / 2, pi / 2, length.out = 121)
+      for (longitude_value in seq(0, 2 * pi, length.out = 13)[-13]) {
+        longitude_vector <- rep(longitude_value, length(latitude))
+        project_line(transform %*% sphere_point(longitude_vector, latitude), color, width, type)
+      }
+    }
+
+    draw_wireframe(diag(3), adjustcolor(palette$sphere, alpha.f = .65), 1, 2)
+    draw_wireframe(d$A, palette$shape, 2, 1)
+
+    axis_colors <- c(palette$v1, palette$v2, palette$v3)
+    origin <- trans3d(0, 0, 0, pmat = view)
+    par(xpd = TRUE)
+    for (i in 1:3) {
+      lane <- d$vectors[, i]
+      lane_points <- cbind(-plot_limit * lane, plot_limit * lane)
+      project_line(lane_points, adjustcolor(axis_colors[i], alpha.f = .42), 1.4, 3)
+
+      input_end <- trans3d(lane[1], lane[2], lane[3], pmat = view)
+      arrows(origin$x, origin$y, input_end$x, input_end$y, length = .06, angle = 20,
+             lwd = 1.2, lty = 3, col = axis_colors[i])
+
+      endpoint <- d$values[i] * lane
+      if (sqrt(sum(endpoint^2)) > 1e-8) {
+        output_end <- trans3d(endpoint[1], endpoint[2], endpoint[3], pmat = view)
+        arrows(origin$x, origin$y, output_end$x, output_end$y, length = .075, angle = 20,
+               lwd = 3.5, col = axis_colors[i])
+        points(output_end$x, output_end$y, pch = 19, cex = .85, col = axis_colors[i])
+      } else {
+        points(origin$x, origin$y, pch = 4, lwd = 2.5, col = axis_colors[i])
+      }
+    }
+  }, res = 115)
+
+  output$eigen_3d_equations <- renderUI({
+    d <- eigen_3d_data()
+    vector_tex <- function(vector) {
+      vector[abs(vector) < 5e-9] <- 0
+      sprintf("\\begin{bmatrix}%.2f\\\\%.2f\\\\%.2f\\end{bmatrix}",
+              vector[1], vector[2], vector[3])
+    }
+    row_tex <- function(row, result_index) {
+      sprintf(
+        "y_%d=%.2fx_1%+.2fx_2%+.2fx_3",
+        result_index, row[1], row[2], row[3]
+      )
+    }
+    matrix_tex <- sprintf(
+      "A=PDP^T=\\begin{bmatrix}%.2f&%.2f&%.2f\\\\%.2f&%.2f&%.2f\\\\%.2f&%.2f&%.2f\\end{bmatrix}",
+      d$A[1, 1], d$A[1, 2], d$A[1, 3],
+      d$A[2, 1], d$A[2, 2], d$A[2, 3],
+      d$A[3, 1], d$A[3, 2], d$A[3, 3]
+    )
+    basis_tex <- sprintf(
+      "P=\\begin{bmatrix}%.2f&%.2f&%.2f\\\\%.2f&%.2f&%.2f\\\\%.2f&%.2f&%.2f\\end{bmatrix}\\qquad D=\\operatorname{diag}(%.2f,%.2f,%.2f)",
+      d$P[1, 1], d$P[1, 2], d$P[1, 3],
+      d$P[2, 1], d$P[2, 2], d$P[2, 3],
+      d$P[3, 1], d$P[3, 2], d$P[3, 3],
+      d$values[1], d$values[2], d$values[3]
+    )
+    component_tex <- paste(
+      row_tex(d$A[1, ], 1), row_tex(d$A[2, ], 2), row_tex(d$A[3, ], 3),
+      sep = "\\qquad "
+    )
+    eigen_equations <- vapply(seq_len(3), function(i) {
+      endpoint <- d$values[i] * d$vectors[, i]
+      sprintf(
+        "A\\mathbf v_%d=%.2f\\mathbf v_%d=%s",
+        i, d$values[i], i, vector_tex(endpoint)
+      )
+    }, character(1))
+
+    div(class = "card eigen-3d-equations",
+      div(class = "eyebrow", "Live matrix and equations"),
+      h3("Every number below follows your sliders"),
+      math_block(basis_tex, "P contains the three eigenvector lanes and D contains their three eigenvalues."),
+      math_block(matrix_tex, "The current three by three symmetric matrix A equals P D P transpose."),
+      math_block(component_tex, "The three component equations that map x to y equals A x."),
+      div(class = "eigen-equation-grid",
+        lapply(seq_len(3), function(i) {
+          math_block(
+            eigen_equations[i],
+            sprintf("Eigenvector %d is scaled by eigenvalue %.2f.", i, d$values[i])
+          )
+        })
+      )
+    )
+  })
+
+  output$eigen_3d_story <- renderUI({
+    d <- eigen_3d_data()
+    tolerance <- 1e-8
+    all_equal <- max(abs(d$values - d$values[1])) < tolerance
+    equal_magnitudes <- max(abs(abs(d$values) - abs(d$values[1]))) < tolerance
+    shape_name <- if (d$rank == 0) {
+      "point"
+    } else if (d$rank == 1) {
+      "line"
+    } else if (d$rank == 2) {
+      "flat ellipse (a pancake)"
+    } else if (equal_magnitudes) {
+      "sphere"
+    } else {
+      "ellipsoid"
+    }
+    shape_article <- if (identical(shape_name, "ellipsoid")) "an" else "a"
+    orientation_text <- if (abs(d$determinant) < tolerance) {
+      "det(A)=0, so space loses at least one dimension and the matrix is not invertible."
+    } else if (d$determinant < 0) {
+      "det(A)<0, so the transformation reverses orientation: an odd number of eigen-lanes flip."
+    } else {
+      "det(A)>0, so orientation is preserved: zero or two eigen-lanes flip."
+    }
+    repeated_text <- if (all_equal) {
+      "All three eigenvalues match, so A=λI and every direction is an eigenvector."
+    } else if (equal_magnitudes) {
+      "The magnitudes match, so the sphere stays spherical; differing signs still create a reflection."
+    } else if (any(duplicated(round(d$values, 8)))) {
+      "A repeated eigenvalue gives a whole plane of possible eigenvectors for this symmetric matrix."
+    } else {
+      "Three distinct eigenvalues give three fixed, mutually perpendicular eigenvector lanes."
+    }
+
+    div(class = "eigen-story eigen-3d-story",
+      div(class = "eyebrow", "3D pattern decoder"),
+      h3(sprintf("The sphere becomes %s %s", shape_article, shape_name)),
+      div(class = "eigen-story-grid",
+        div(class = "eigen-story-block",
+          strong("Shape shortcut"),
+          span("Count nonzero eigenvalues: 3 → solid shape, 2 → pancake, 1 → line, 0 → point.")
+        ),
+        div(class = "eigen-story-block",
+          strong("Flip shortcut"),
+          span(orientation_text)
+        ),
+        div(class = "eigen-story-block",
+          strong("Volume shortcut"),
+          span(sprintf("|det(A)| = %.2f, so volumes are multiplied by %.2f.",
+                       abs(d$determinant), abs(d$determinant)))
+        ),
+        div(class = "eigen-story-block",
+          strong("Repeated-value clue"),
+          span(repeated_text)
+        ),
+        div(class = "eigen-story-block",
+          strong("Trace check"),
+          span(sprintf("trace(A) = %.2f = λ₁+λ₂+λ₃. Use this to catch arithmetic mistakes.", d$trace))
+        ),
+        div(class = "eigen-story-block",
+          strong("Ratio clue"),
+          span("Ratios compare relative stretch. They change the ellipsoid's proportions, not the three eigenvector lanes.")
+        )
+      )
+    )
+  })
+
   set_eigen_controls <- function(angle, lambda1, lambda2, probe) {
     updateSliderInput(session, "eig_angle", value = angle)
     updateSliderInput(session, "eig_lambda1", value = lambda1)
@@ -4937,6 +5307,23 @@ server <- function(input, output, session) {
   })
   observeEvent(input$eig_preset_rotate, {
     set_eigen_controls(75, 3, .75, 20)
+  })
+
+  observeEvent(input$eig_3d_preset_ellipsoid, {
+    set_eigen_controls(30, 3, 1.5, 75)
+    updateSliderInput(session, "eig_lambda3", value = .75)
+  })
+  observeEvent(input$eig_3d_preset_pancake, {
+    set_eigen_controls(30, 3, 1.25, 75)
+    updateSliderInput(session, "eig_lambda3", value = 0)
+  })
+  observeEvent(input$eig_3d_preset_flip, {
+    set_eigen_controls(30, 2.5, 1, 75)
+    updateSliderInput(session, "eig_lambda3", value = -1)
+  })
+  observeEvent(input$eig_3d_preset_uniform, {
+    set_eigen_controls(30, 2, 2, 75)
+    updateSliderInput(session, "eig_lambda3", value = 2)
   })
 
   output$eigen_prediction_feedback <- renderUI({

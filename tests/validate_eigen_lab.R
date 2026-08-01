@@ -48,12 +48,43 @@ stopifnot(eigenvalue_short_effect(-0.5) == "flip + shrink")
 stopifnot(eigenvalue_short_effect(0) == "flatten")
 stopifnot(eigenvalue_short_effect(1) == "same length")
 
+# The 3D simulator preserves the same eigenvalue rules in three dimensions.
+default_3d <- build_eigen_model_3d(30, 3, 0.75, -1.5)
+stopifnot(near(t(default_3d$P) %*% default_3d$P, diag(3)))
+stopifnot(near(default_3d$A, t(default_3d$A)))
+for (i in seq_len(3)) {
+  stopifnot(near(
+    drop(default_3d$A %*% default_3d$vectors[, i]),
+    default_3d$values[i] * default_3d$vectors[, i]
+  ))
+}
+stopifnot(near(sum(diag(default_3d$A)), sum(default_3d$values)))
+stopifnot(near(det(default_3d$A), prod(default_3d$values)))
+stopifnot(default_3d$rank == 3)
+stopifnot(default_3d$negative_count == 1)
+stopifnot(default_3d$zero_count == 0)
+
+# Changing only eigenvalues preserves all three lanes; lambda3 controls v3 alone.
+changed_3d <- build_eigen_model_3d(30, -2, 4, 0)
+stopifnot(near(default_3d$vectors, changed_3d$vectors))
+stopifnot(sqrt(sum((changed_3d$A %*% changed_3d$vectors[, 3])^2)) < 1e-9)
+stopifnot(changed_3d$rank == 2)
+stopifnot(abs(changed_3d$determinant) < 1e-10)
+
+uniform_3d <- build_eigen_model_3d(83, 2, 2, 2)
+stopifnot(near(uniform_3d$A, 2 * diag(3)))
+stopifnot(uniform_3d$rank == 3)
+
 shiny::testServer(server, {
   session$setInputs(
     eig_angle = 30,
     eig_lambda1 = 2.5,
     eig_lambda2 = -1,
-    eig_probe_angle = 75
+    eig_lambda3 = 1.5,
+    eig_probe_angle = 75,
+    eig_3d_azimuth = 42,
+    eig_3d_elevation = 25,
+    ui_theme = "dark"
   )
   session$flushReact()
 
@@ -65,6 +96,19 @@ shiny::testServer(server, {
   stopifnot(grepl("not the lane angles", story_html, fixed = TRUE))
   stopifnot(grepl("may swap when software", story_html, fixed = TRUE))
 
+  metrics_3d_html <- paste(as.character(output$eigen_3d_metrics), collapse = "")
+  stopifnot(grepl("3 of 3", metrics_3d_html, fixed = TRUE))
+  stopifnot(grepl("-3.75", metrics_3d_html, fixed = TRUE))
+
+  equations_3d_html <- paste(as.character(output$eigen_3d_equations), collapse = "")
+  stopifnot(grepl("Live matrix and equations", equations_3d_html, fixed = TRUE))
+  stopifnot(grepl("A\\\\mathbf v_3", equations_3d_html))
+
+  story_3d_html <- paste(as.character(output$eigen_3d_story), collapse = "")
+  stopifnot(grepl("sphere becomes an ellipsoid", story_3d_html, fixed = TRUE))
+  stopifnot(grepl("reverses orientation", story_3d_html, fixed = TRUE))
+  stopifnot(grepl("not the three eigenvector lanes", story_3d_html, fixed = TRUE))
+
   session$setInputs(eig_prediction = "flip", check_eig_prediction = 1)
   session$flushReact()
   feedback_html <- paste(as.character(output$eigen_prediction_feedback), collapse = "")
@@ -72,4 +116,4 @@ shiny::testServer(server, {
   stopifnot(grepl("does not rotate", feedback_html, fixed = TRUE))
 })
 
-cat("Eigenvalue geometry, stable directions, teaching states, and prediction feedback passed.\n")
+cat("Eigenvalue 2D/3D geometry, stable directions, teaching states, equations, and prediction feedback passed.\n")
