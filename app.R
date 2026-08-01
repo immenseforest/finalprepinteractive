@@ -111,6 +111,70 @@ math_inline <- function(tex, label) {
   )
 }
 
+# ---------- Concept-first eigenvalue lab ----------
+build_eigen_model <- function(angle_deg, lambda1, lambda2, probe_angle_deg) {
+  angle <- angle_deg * pi / 180
+  probe_angle <- probe_angle_deg * pi / 180
+  v1 <- c(cos(angle), sin(angle))
+  v2 <- c(-sin(angle), cos(angle))
+  P <- cbind(v1, v2)
+  values <- c(lambda1, lambda2)
+  D <- diag(values, nrow = 2)
+  A <- P %*% D %*% t(P)
+  probe <- c(cos(probe_angle), sin(probe_angle))
+  transformed_probe <- drop(A %*% probe)
+  transformed_norm <- sqrt(sum(transformed_probe^2))
+
+  raw_turn <- NA_real_
+  line_turn <- NA_real_
+  if (transformed_norm > 1e-10) {
+    input_angle <- atan2(probe[2], probe[1]) * 180 / pi
+    output_angle <- atan2(transformed_probe[2], transformed_probe[1]) * 180 / pi
+    raw_turn <- abs(((output_angle - input_angle + 180) %% 360) - 180)
+    line_turn <- min(raw_turn, abs(180 - raw_turn))
+  }
+
+  list(
+    A = A,
+    P = P,
+    D = D,
+    values = values,
+    vectors = P,
+    probe = probe,
+    transformed_probe = transformed_probe,
+    transformed_norm = transformed_norm,
+    raw_turn = raw_turn,
+    line_turn = line_turn,
+    angle_deg = angle_deg,
+    probe_angle_deg = probe_angle_deg
+  )
+}
+
+eigenvalue_effect <- function(value) {
+  magnitude <- abs(value)
+  size_word <- if (magnitude < 1e-8) {
+    "collapses to zero"
+  } else if (abs(magnitude - 1) < 1e-8) {
+    "keeps the same length"
+  } else if (magnitude < 1) {
+    "shrinks"
+  } else {
+    "stretches"
+  }
+  if (value < -1e-8) paste("flips and", size_word) else size_word
+}
+
+eigenvalue_short_effect <- function(value) {
+  magnitude <- abs(value)
+  if (magnitude < 1e-8) return("flatten")
+  if (value < 0 && abs(magnitude - 1) < 1e-8) return("flip")
+  if (value < 0 && magnitude < 1) return("flip + shrink")
+  if (value < 0) return("flip + stretch")
+  if (abs(magnitude - 1) < 1e-8) return("same length")
+  if (magnitude < 1) return("shrink")
+  "stretch"
+}
+
 # ---------- Community feedback ----------
 empty_community_comments <- function() {
   data.frame(
@@ -1312,6 +1376,13 @@ source_prompt_story <- list(
       "Under Roadmap & Practice, add detailed statistics about question difficulty and size, including how often matrices were 4 x 4 and whether 6 x 6 could appear, so learners do not over-study low-value material."
     ),
     outcome = "Re-audited all six finals at question-group level, added matrix-size and marks-based demand counts, exposed technique frequencies, and built a recent-exam time allocator with evidence-based stop rules."
+  ),
+  list(
+    phase = "18 · Eigenvalue pattern decoder", title = "Make eigenvalues impossible to misread",
+    prompts = c(
+      "Develop the linear-algebra eigenvalue page into a high-impact study hacker with straightforward insights and ELI5 explanations, including why v1 and v2 seem to change direction differently."
+    ),
+    outcome = "Separated eigenvector direction from eigenvalue scaling, visualized the transformed unit circle and a non-eigenvector probe, explained label swapping and sign flips, and added prediction presets, a mini-check, and exam-speed shortcuts."
   )
 )
 
@@ -1337,8 +1408,8 @@ source_prompts_page <- function() {
       ),
       div(
         class = "prompt-stats",
-        div(strong("17"), span("build milestones")),
-        div(strong("39"), span("source requests reviewed")),
+        div(strong("18"), span("build milestones")),
+        div(strong("40"), span("source requests reviewed")),
         div(strong("2020–2025"), span("finals represented"))
       )
     ),
@@ -1517,6 +1588,48 @@ ui <- fluidPage(
       .metric { background:#04080d; border:1px solid var(--border); border-radius:12px; padding:14px; }
       .metric span { display:block; color:var(--muted); font-size:12px; margin-bottom:5px; }
       .metric strong { color:var(--text); font-size:18px; font-variant-numeric:tabular-nums; }
+      .eigen-hero p { max-width:960px; color:#c8dbea; font-size:15px; line-height:1.65; }
+      .eigen-memory-line { display:flex; flex-wrap:wrap; gap:7px 10px; align-items:baseline;
+        margin-top:15px; padding:12px 14px; color:#cfe3f5; background:#071b2d;
+        border-left:4px solid var(--cyan); border-radius:0 9px 9px 0; }
+      .eigen-memory-line strong { color:#eef6ff; }
+      .eigen-hack-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr));
+        gap:12px; margin:0 0 20px; }
+      .eigen-hack { padding:15px; background:linear-gradient(145deg,#071524,#03080d);
+        border:1px solid #244b6d; border-radius:11px; }
+      .eigen-hack strong { display:block; margin-bottom:7px; color:#dceeff; }
+      .eigen-hack span { color:var(--muted); font-size:12px; line-height:1.5; }
+      .eigen-controls .form-group { margin-bottom:20px; }
+      .eigen-presets .btn { flex:1 1 135px; }
+      .eigen-quiz .shiny-options-group { display:grid; gap:7px; margin-bottom:14px; }
+      .eigen-quiz .radio { margin:0; padding:8px 10px; background:#040b12;
+        border:1px solid #244b6d; border-radius:8px; }
+      .eigen-feedback { margin-top:13px; padding:11px 12px; border-radius:8px; line-height:1.5; }
+      .eigen-feedback.correct { color:#cbf6ff; background:#062532; border:1px solid #1c8194; }
+      .eigen-feedback.retry { color:#e0e9f3; background:#201c32; border:1px solid #6355a3; }
+      .eigen-legend { display:flex; flex-wrap:wrap; gap:8px 13px; margin:-4px 0 10px;
+        color:var(--muted); font-size:11px; }
+      .eigen-legend span { display:inline-flex; align-items:center; gap:6px; }
+      .eigen-legend span::before { content:''; display:inline-block; width:18px; height:3px;
+        background:var(--muted); }
+      .eigen-legend .legend-circle::before { height:0; border-top:2px dashed var(--muted); background:none; }
+      .eigen-legend .legend-shape::before { background:#23b8d1; }
+      .eigen-legend .legend-v1::before { background:#4da3ff; }
+      .eigen-legend .legend-v2::before { background:#6f7cff; }
+      .eigen-legend .legend-probe::before { background:#d6e8f7; }
+      .eigen-plot-card { overflow:hidden; }
+      .eigen-story { padding:18px; background:linear-gradient(145deg,#071524,#03080d);
+        border:1px solid #244b6d; border-radius:12px; }
+      .eigen-story h3 { margin:4px 0 8px; color:#eef6ff; }
+      .eigen-story>p { color:#c8dbea; line-height:1.6; }
+      .eigen-story-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+      .eigen-story-block { padding:12px 13px; background:#040b12; border:1px solid #244b6d;
+        border-radius:8px; }
+      .eigen-story-block strong { display:block; margin-bottom:5px; color:var(--cyan);
+        font-size:11px; letter-spacing:.07em; text-transform:uppercase; }
+      .eigen-story-block span { color:#c8dbea; font-size:12px; line-height:1.5; }
+      .eigen-story .formula { margin-top:12px; }
+      .eigen-exam-guide table { margin-bottom:0; }
       .scope-metric-row { display:grid; grid-template-columns:repeat(4,minmax(0,1fr));
         gap:12px; margin:16px 0 20px; }
       .scope-metric { padding:16px; background:linear-gradient(145deg,#071524,#03080d);
@@ -1938,6 +2051,28 @@ ui <- fluidPage(
       .legacy-mode .formula,.legacy-mode .metric { color:#000; background:#ffffe1;
         border:2px inset #fff; border-radius:0; }
       .legacy-mode .metric strong { color:#000080; }
+      .legacy-mode .eigen-hero p,.legacy-mode .eigen-memory-line,
+      .legacy-mode .eigen-hack span,.legacy-mode .eigen-story>p,
+      .legacy-mode .eigen-story-block span { color:#000; }
+      .legacy-mode .eigen-memory-line,.legacy-mode .eigen-hack,
+      .legacy-mode .eigen-story,.legacy-mode .eigen-story-block,
+      .legacy-mode .eigen-quiz .radio { color:#000; background:#ffffe1;
+        border:2px inset #fff; border-radius:0; }
+      .legacy-mode .eigen-memory-line { border-left:5px solid #000080; }
+      .legacy-mode .eigen-memory-line strong,.legacy-mode .eigen-hack strong,
+      .legacy-mode .eigen-story h3 { color:#000080; }
+      .legacy-mode .eigen-story-block strong { color:#800000; }
+      .legacy-mode .eigen-legend { color:#333; }
+      .legacy-mode .eigen-legend .legend-circle::before { border-color:#707070; }
+      .legacy-mode .eigen-legend .legend-shape::before { background:#008080; }
+      .legacy-mode .eigen-legend .legend-v1::before { background:#0000cc; }
+      .legacy-mode .eigen-legend .legend-v2::before { background:#800080; }
+      .legacy-mode .eigen-legend .legend-probe::before { background:#000; }
+      .legacy-mode .eigen-feedback { border-radius:0; }
+      .legacy-mode .eigen-feedback.correct { color:#000; background:#ccffff;
+        border:2px inset #fff; }
+      .legacy-mode .eigen-feedback.retry { color:#000; background:#ffffe1;
+        border:2px inset #fff; }
       .legacy-mode .scope-metric,.legacy-mode .scope-callout,
       .legacy-mode .scope-guide-block,.legacy-mode .study-budget>div {
         color:#000; background:#ffffe1; border:2px inset #fff; border-radius:0; }
@@ -2077,6 +2212,8 @@ ui <- fluidPage(
       @media(max-width:1050px){ #main_navigation{grid-template-columns:repeat(3,minmax(0,1fr));position:static;} }
       @media(max-width:800px){ .concept,.video-grid{grid-template-columns:1fr;} .hero{padding:30px 20px;}
         .content{padding:22px 16px;} .metric-row{grid-template-columns:1fr;}
+        .eigen-hack-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+        .eigen-story-grid{grid-template-columns:1fr;}
         .scope-metric-row{grid-template-columns:repeat(2,minmax(0,1fr));}
         .study-budget{grid-template-columns:1fr;}
         .module-heading{grid-template-columns:1fr;} .module-seal{width:46px;height:46px;}
@@ -2092,6 +2229,7 @@ ui <- fluidPage(
         .chat-window-bar{grid-template-columns:auto 1fr;}.chat-window-status{display:none;}
         .prompt-phase{padding:9px 14px;} }
       @media(max-width:560px){ #main_navigation{grid-template-columns:repeat(2,minmax(0,1fr));}
+        .eigen-hack-grid{grid-template-columns:1fr;}
         .scope-metric-row{grid-template-columns:1fr;}
         .demand-item{grid-template-columns:1fr 42px;gap:7px;}
         .demand-label{grid-column:1 / -1;}
@@ -3133,35 +3271,145 @@ ui <- fluidPage(
                   )
                 ),
                 tabPanel("3 · Explore: Eigenvalues",
-                  div(class = "card",
-                    div(class = "eyebrow", "Geometric intuition"),
-                    h2("Eigenvectors and diagonalization"),
-                    tags$p("For a symmetric 2×2 matrix, change the entries and watch the eigenvectors remain perpendicular."),
-                    math_block("A\\mathbf{v}=\\lambda\\mathbf{v}", "The eigenvalue equation.")
+                  div(class = "card eigen-hero",
+                    div(class = "eyebrow", "Geometric intuition · exam shortcut · 6/6 finals"),
+                    h2("Eigenvalues without the fog"),
+                    tags$p(
+                      strong("ELI5: "),
+                      "A matrix is a stretch-and-squish machine. Most arrows get turned. An eigenvector is a lucky direction that stays on its original line; its eigenvalue tells the machine how far to stretch it and whether to flip it."
+                    ),
+                    math_block("A\\mathbf{v}=\\lambda\\mathbf{v}",
+                               "A matrix sends an eigenvector to a scaled copy of itself."),
+                    div(
+                      class = "eigen-memory-line",
+                      strong("The whole idea in one line:"),
+                      span("v chooses the lane; λ chooses forward/backward and the distance.")
+                    )
                   ),
-                  div(class = "card",
-                    h3("Eigenvalue solution guide"),
-                    tags$ol(class = "learning-path",
-                      tags$li("Form A−λI and set its determinant to zero."),
-                      tags$li("Solve the characteristic polynomial for λ."),
-                      tags$li("For each λ, solve (A−λI)v=0."),
-                      tags$li("Normalize v when requested."),
-                      tags$li("Build P from eigenvectors and D from matching eigenvalues.")
+                  div(
+                    class = "eigen-hack-grid",
+                    div(
+                      class = "eigen-hack",
+                      strong(tagList("Eigenvector v", help_tip("A direction that the matrix does not steer away from its line."))),
+                      span("The no-turn lane. v and −v describe the same eigen-direction.")
+                    ),
+                    div(
+                      class = "eigen-hack",
+                      strong(tagList("Sign of λ", help_tip("The sign controls whether the transformed arrow faces the same way or flips."))),
+                      span("Positive = same way. Negative = flip 180°. Zero = crushed flat.")
+                    ),
+                    div(
+                      class = "eigen-hack",
+                      strong(tagList("Size of |λ|", help_tip("Absolute value means ignore the sign and look only at how much the length changes."))),
+                      span("Above 1 stretches. Between 0 and 1 shrinks. Exactly 1 keeps length.")
+                    ),
+                    div(
+                      class = "eigen-hack",
+                      strong("v₁ and v₂ are name tags"),
+                      span("Software can swap the labels or replace v by −v. The geometric lines have not changed.")
                     )
                   ),
                   fluidRow(
                     column(4,
+                      div(class = "card eigen-controls",
+                        h3(tagList("Control the hidden ingredients",
+                                   help_tip("This lab builds a symmetric matrix as A = P D P transpose. P chooses directions and D stores eigenvalues."))),
+                        tags$p(class = "hint",
+                          "Each slider has one job, so direction and scaling cannot be confused."),
+                        sliderInput(
+                          "eig_angle",
+                          tagList("Eigenvector lane angle θ", help_tip("Rotates v1. Because the matrix is symmetric, v2 stays 90 degrees away.")),
+                          min = 0, max = 179, value = 30, step = 1, ticks = FALSE,
+                          post = "°"
+                        ),
+                        sliderInput(
+                          "eig_lambda1",
+                          tagList("Eigenvalue λ₁", help_tip("Scales v1. Change this and the v1 line stays fixed.")),
+                          min = -4, max = 4, value = 3, step = .25, ticks = FALSE
+                        ),
+                        sliderInput(
+                          "eig_lambda2",
+                          tagList("Eigenvalue λ₂", help_tip("Scales v2. A negative value flips its arrow but does not rotate its line.")),
+                          min = -4, max = 4, value = .75, step = .25, ticks = FALSE
+                        ),
+                        sliderInput(
+                          "eig_probe_angle",
+                          tagList("Ordinary test-arrow angle ψ", help_tip("This is not forced to be an eigenvector. Compare x with Ax to see it usually turn.")),
+                          min = 0, max = 179, value = 75, step = 1, ticks = FALSE,
+                          post = "°"
+                        )
+                      ),
                       div(class = "card",
-                        h3("Symmetric matrix"),
-                        sliderInput("eig_a", "Top-left a", min = -5, max = 8, value = 4, step = .25),
-                        sliderInput("eig_b", "Off-diagonal b", min = -5, max = 5, value = 2, step = .25),
-                        sliderInput("eig_d", "Bottom-right d", min = -5, max = 8, value = 1, step = .25)
+                        h3("High-impact experiments"),
+                        tags$p(class = "hint", "Use these in order and predict before clicking."),
+                        div(class = "preset-actions eigen-presets",
+                          actionButton("eig_preset_flip", "1 · Flip v₂"),
+                          actionButton("eig_preset_flatten", "2 · Flatten v₂"),
+                          actionButton("eig_preset_uniform", "3 · Equal λ values"),
+                          actionButton("eig_preset_rotate", "4 · Rotate only P")
+                        )
+                      ),
+                      div(class = "card eigen-quiz",
+                        h3("30-second prediction"),
+                        tags$p("If λ₂ changes from +1 to −1 while θ stays fixed, what happens to v₂?"),
+                        radioButtons(
+                          "eig_prediction", NULL,
+                          choices = c(
+                            "It rotates by 90 degrees" = "rotate",
+                            "It stays on the same line but flips" = "flip",
+                            "It disappears" = "disappear"
+                          ),
+                          selected = character(0)
+                        ),
+                        actionButton("check_eig_prediction", "Check my prediction", class = "btn-primary"),
+                        uiOutput("eigen_prediction_feedback")
                       )
                     ),
                     column(8,
                       uiOutput("eigen_metrics"),
-                      div(class = "card plot-wrap", h3("Eigenvector directions"),
-                          plotOutput("eigen_plot", height = 420))
+                      div(class = "card plot-wrap eigen-plot-card",
+                        h3("Unit circle in → transformed shape out"),
+                        div(class = "eigen-legend",
+                          span(class = "legend-circle", "input circle"),
+                          span(class = "legend-shape", "A(circle)"),
+                          span(class = "legend-v1", "v₁ → λ₁v₁"),
+                          span(class = "legend-v2", "v₂ → λ₂v₂"),
+                          span(class = "legend-probe", "ordinary x → Ax")
+                        ),
+                        div(
+                          role = "img",
+                          `aria-label` = "An input unit circle, its transformed ellipse or line, two eigenvector axes, and an ordinary test vector before and after the matrix transformation.",
+                          plotOutput("eigen_plot", height = 520)
+                        )
+                      ),
+                      uiOutput("eigen_story")
+                    )
+                  ),
+                  div(class = "card eigen-exam-guide",
+                    div(class = "eyebrow", "Exam mode · fastest reliable workflow"),
+                    h2("Find eigenpairs without getting lost"),
+                    fluidRow(
+                      column(6,
+                        tags$ol(class = "learning-path",
+                          tags$li("Find the eigenvalues: solve det(A−λI)=0."),
+                          tags$li("For each λ, solve (A−λI)v=0. One free variable is normal."),
+                          tags$li("Pair each vector with the λ used to find it. Never mix the columns."),
+                          tags$li("Normalize only when asked, or when building an orthogonal P for a symmetric matrix."),
+                          tags$li("Check Av=λv. This catches sign and arithmetic mistakes immediately.")
+                        )
+                      ),
+                      column(6,
+                        tags$table(
+                          tags$thead(tags$tr(tags$th("Instant check"), tags$th("What it tells you"))),
+                          tags$tbody(
+                            tags$tr(tags$td("λ₁ + λ₂ = trace(A)"), tags$td("Checks the eigenvalue sum")),
+                            tags$tr(tags$td("λ₁λ₂ = det(A)"), tags$td("Checks the product; zero means singular")),
+                            tags$tr(tags$td("λ₁ and λ₂ opposite signs"), tags$td("One eigen-direction flips relative to the other")),
+                            tags$tr(tags$td("λ₁ = λ₂ for symmetric A"), tags$td("A = λI; every direction is an eigenvector")),
+                            tags$tr(tags$td("A + cI"), tags$td("Same eigenvectors; every eigenvalue gains c"))
+                          )
+                        )
+                      )
                     )
                   )
                 ),
@@ -4487,38 +4735,230 @@ server <- function(input, output, session) {
   }, res = 110)
 
   eigen_data <- reactive({
-    A <- matrix(c(input$eig_a, input$eig_b, input$eig_b, input$eig_d), 2, 2)
-    eig <- eigen(A, symmetric = TRUE)
-    list(A = A, values = eig$values, vectors = eig$vectors)
+    build_eigen_model(
+      input$eig_angle,
+      input$eig_lambda1,
+      input$eig_lambda2,
+      input$eig_probe_angle
+    )
   })
 
   output$eigen_metrics <- renderUI({
     d <- eigen_data()
-    dot_product <- sum(d$vectors[, 1] * d$vectors[, 2])
+    probe_metric <- if (is.na(d$line_turn)) {
+      "collapsed"
+    } else {
+      sprintf("%.1f° off line", d$line_turn)
+    }
     div(class = "metric-row",
-      div(class = "metric", span("Eigenvalue λ₁"), strong(sprintf("%.3f", d$values[1]))),
-      div(class = "metric", span("Eigenvalue λ₂"), strong(sprintf("%.3f", d$values[2]))),
-      div(class = "metric", span("v₁ · v₂"), strong(sprintf("%.3f (orthogonal)", dot_product)))
+      div(class = "metric",
+          span("λ₁ job on v₁"),
+          strong(sprintf("%.2f · %s", d$values[1], eigenvalue_short_effect(d$values[1])))),
+      div(class = "metric",
+          span("λ₂ job on v₂"),
+          strong(sprintf("%.2f · %s", d$values[2], eigenvalue_short_effect(d$values[2])))),
+      div(class = "metric",
+          span("Ordinary x: line-direction change"),
+          strong(probe_metric))
     )
   })
 
   output$eigen_plot <- renderPlot({
     d <- eigen_data()
-    dark_plot()
-    plot(0, 0, type = "n", xlim = c(-2, 2), ylim = c(-2, 2),
-         xlab = "x₁", ylab = "x₂", asp = 1)
-    grid(col = plot_grid)
-    theta <- seq(0, 2 * pi, length.out = 300)
-    lines(cos(theta), sin(theta), col = plot_muted)
-    colors <- c(plot_gold, plot_ruby)
+    legacy_plot <- identical(input$ui_theme, "legacy")
+    eigen_palette <- if (legacy_plot) {
+      list(
+        background = "#ffffff", axis = "#222222", text = "#000000",
+        grid = "#d7d7d7", muted = "#707070", shape = "#008080",
+        v1 = "#0000cc", v2 = "#800080", probe_input = "#606060",
+        probe_output = "#000000"
+      )
+    } else {
+      list(
+        background = plot_bg, axis = plot_axis, text = plot_text,
+        grid = plot_grid, muted = plot_muted, shape = plot_emerald,
+        v1 = plot_gold, v2 = plot_ruby, probe_input = "#9fb3c8",
+        probe_output = "#d6e8f7"
+      )
+    }
+    par(
+      bg = eigen_palette$background, fg = eigen_palette$axis,
+      col.axis = eigen_palette$axis, col.lab = eigen_palette$text,
+      mar = c(4.2, 4.4, 1, 1), family = "sans"
+    )
+    theta <- seq(0, 2 * pi, length.out = 500)
+    circle <- rbind(cos(theta), sin(theta))
+    transformed_circle <- d$A %*% circle
+    plot_limit <- max(
+      1.6,
+      1.18 * max(abs(c(transformed_circle, d$transformed_probe)), na.rm = TRUE)
+    )
+    plot_limit <- min(plot_limit, 5)
+    plot(0, 0, type = "n", xlim = c(-plot_limit, plot_limit),
+         ylim = c(-plot_limit, plot_limit), xlab = "x₁", ylab = "x₂", asp = 1)
+    grid(col = eigen_palette$grid)
+    abline(h = 0, v = 0, col = adjustcolor(eigen_palette$muted, alpha.f = .65))
+    lines(circle[1, ], circle[2, ], col = eigen_palette$muted, lty = 2, lwd = 2)
+    lines(transformed_circle[1, ], transformed_circle[2, ], col = eigen_palette$shape, lwd = 3)
+
+    colors <- c(eigen_palette$v1, eigen_palette$v2)
     for (i in 1:2) {
       v <- d$vectors[, i]
-      arrows(-v[1], -v[2], v[1], v[2], length = .1, lwd = 4, col = colors[i])
-      text(1.3 * v[1], 1.3 * v[2], labels = paste0("v", i), col = plot_text)
+      endpoint <- d$values[i] * v
+      segments(-plot_limit * v[1], -plot_limit * v[2],
+               plot_limit * v[1], plot_limit * v[2],
+               col = adjustcolor(colors[i], alpha.f = .34), lwd = 2)
+      arrows(0, 0, v[1], v[2], length = .08, lwd = 1.5, lty = 3, col = colors[i])
+      if (sqrt(sum(endpoint^2)) > 1e-8) {
+        arrows(0, 0, endpoint[1], endpoint[2], length = .1, lwd = 4, col = colors[i])
+        label_point <- endpoint + .1 * v * sign(d$values[i])
+        text(label_point[1], label_point[2], labels = paste0("λ", i, "v", i),
+             col = eigen_palette$text, cex = .9)
+      } else {
+        points(0, 0, pch = 4, lwd = 3, col = colors[i])
+        text(.45 * v[1], .45 * v[2], labels = paste0("λ", i, "v", i, " = 0"),
+             col = eigen_palette$text, cex = .85)
+      }
     }
-    legend("topright", sprintf("λ%d = %.2f", 1:2, d$values),
-           col = colors, lwd = 4, bty = "n", text.col = plot_text)
+
+    arrows(0, 0, d$probe[1], d$probe[2], length = .08, lwd = 2, lty = 2,
+           col = eigen_palette$probe_input)
+    text(1.08 * d$probe[1], 1.08 * d$probe[2], labels = "x", col = eigen_palette$text)
+    if (d$transformed_norm > 1e-8) {
+      arrows(0, 0, d$transformed_probe[1], d$transformed_probe[2],
+             length = .1, lwd = 3, col = eigen_palette$probe_output)
+      probe_label <- 1.06 * d$transformed_probe
+      text(probe_label[1], probe_label[2], labels = "Ax", col = eigen_palette$text)
+    } else {
+      points(0, 0, pch = 8, cex = 1.2, col = eigen_palette$probe_output)
+    }
   }, res = 110)
+
+  output$eigen_story <- renderUI({
+    d <- eigen_data()
+    equal_values <- abs(d$values[1] - d$values[2]) < 1e-8
+    zero_values <- abs(d$values) < 1e-8
+    headline <- if (all(zero_values)) {
+      "The zero matrix: every arrow is crushed to the origin"
+    } else if (equal_values) {
+      "Equal eigenvalues: every direction becomes a no-turn direction"
+    } else if (any(zero_values)) {
+      "One dimension disappears: the circle is flattened to a line"
+    } else if (prod(d$values) < 0) {
+      "Opposite signs: one eigen-lane flips while the other does not"
+    } else {
+      "Two fixed lanes, with independent stretch instructions"
+    }
+
+    ratio_text <- if (abs(d$values[2]) < 1e-8) {
+      "λ₁/λ₂ is undefined because λ₂=0. The transformed shape is flattened."
+    } else {
+      sprintf(
+        "λ₁/λ₂ = %.2f. It controls relative stretch and reflection, not the lane angles while θ is fixed.",
+        d$values[1] / d$values[2]
+      )
+    }
+
+    probe_text <- if (is.na(d$line_turn)) {
+      "Ax landed at the origin, so it has no output direction."
+    } else if (d$line_turn < .25) {
+      if (sum(d$probe * d$transformed_probe) < 0) {
+        "x stayed on its line but reversed its arrow: it is on an eigen-direction with a negative eigenvalue."
+      } else {
+        "x stayed on its line: the test arrow is aligned with an eigen-direction."
+      }
+    } else {
+      sprintf("x turned %.1f° away from its original line, so it is not an eigenvector.", d$line_turn)
+    }
+
+    v2_angle <- (d$angle_deg + 90) %% 180
+    matrix_tex <- sprintf(
+      "A=PDP^T=\\begin{bmatrix}%.2f&%.2f\\\\%.2f&%.2f\\end{bmatrix}",
+      d$A[1, 1], d$A[1, 2], d$A[2, 1], d$A[2, 2]
+    )
+
+    div(
+      class = "eigen-story",
+      div(class = "eyebrow", "Live pattern decoder"),
+      h3(headline),
+      tags$p(
+        if (equal_values) {
+          "Because A=λI, the circle stays a circle (possibly flipped or resized). The displayed v₁ and v₂ are only one convenient pair; they are not unique."
+        } else {
+          "The matrix is symmetric, so its two distinct eigen-directions are perpendicular and can be used as the columns of an orthogonal P."
+        }
+      ),
+      div(class = "eigen-story-grid",
+        div(class = "eigen-story-block",
+          strong("Direction rule"),
+          span(sprintf("v₁ is at %.0f° and v₂ is at %.0f°. Only θ rotates these lanes.",
+                       d$angle_deg, v2_angle))
+        ),
+        div(class = "eigen-story-block",
+          strong("λ₁ instruction"),
+          span(paste0("Along v₁, the machine ", eigenvalue_effect(d$values[1]), "."))
+        ),
+        div(class = "eigen-story-block",
+          strong("λ₂ instruction"),
+          span(paste0("Along v₂, the machine ", eigenvalue_effect(d$values[2]), "."))
+        ),
+        div(class = "eigen-story-block",
+          strong("Ratio answer"),
+          span(ratio_text)
+        ),
+        div(class = "eigen-story-block",
+          strong("Ordinary-arrow test"),
+          span(probe_text)
+        ),
+        div(class = "eigen-story-block",
+          strong("Label warning"),
+          span("v₁/v₂ may swap when software reorders λ values; v and −v are the same eigen-direction.")
+        )
+      ),
+      math_block(matrix_tex, "The current symmetric matrix reconstructed from its eigenvectors and eigenvalues.")
+    )
+  })
+
+  set_eigen_controls <- function(angle, lambda1, lambda2, probe) {
+    updateSliderInput(session, "eig_angle", value = angle)
+    updateSliderInput(session, "eig_lambda1", value = lambda1)
+    updateSliderInput(session, "eig_lambda2", value = lambda2)
+    updateSliderInput(session, "eig_probe_angle", value = probe)
+  }
+
+  observeEvent(input$eig_preset_flip, {
+    set_eigen_controls(30, 2.5, -1, 75)
+  })
+  observeEvent(input$eig_preset_flatten, {
+    set_eigen_controls(30, 3, 0, 75)
+  })
+  observeEvent(input$eig_preset_uniform, {
+    set_eigen_controls(30, 2, 2, 75)
+  })
+  observeEvent(input$eig_preset_rotate, {
+    set_eigen_controls(75, 3, .75, 20)
+  })
+
+  output$eigen_prediction_feedback <- renderUI({
+    req(input$check_eig_prediction > 0)
+    answer <- isolate(input$eig_prediction)
+    if (is.null(answer) || !nzchar(answer)) {
+      return(div(class = "eigen-feedback retry", "Choose an answer first—prediction is where the learning happens."))
+    }
+    if (identical(answer, "flip")) {
+      div(
+        class = "eigen-feedback correct",
+        strong("Correct. "),
+        "The v₂ line does not rotate. Multiplying by −1 points the transformed arrow the opposite way with the same length."
+      )
+    } else {
+      div(
+        class = "eigen-feedback retry",
+        strong("Try again. "),
+        "Changing λ₂ changes the scale and possibly the arrow orientation—not the v₂ eigen-line."
+      )
+    }
+  })
 
   practice_bank <- list(
     "Laplace transforms" = list(

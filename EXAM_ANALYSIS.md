@@ -118,7 +118,10 @@ The app maps these findings into:
 
 - Existing Laplace Transform Lab
 - Differential Equations overview, characteristic-root lab, and phase lab
-- Linear Algebra overview, system lab, and eigenvalue lab
+- Linear Algebra overview, system lab, and an eigenvalue pattern decoder that
+  separates eigenvector direction from eigenvalue scale/sign, shows the unit
+  circle transforming, and teaches label swapping, singularity, and repeated
+  eigenvalues through presets and prediction checks
 - Exam Coach with a six-year coverage table, mastery checklist, and tiered
   practice generator
 - Question-level matrix-size counts, marks-based demand statistics, method
