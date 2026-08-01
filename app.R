@@ -1428,6 +1428,13 @@ source_prompt_story <- list(
       "Redesign page arrangements so the most important information and graphs fit together on one screen, including placing the 2D and 3D eigenvalue graphs side by side."
     ),
     outcome = "Reorganized the eigenvalue lab into a synchronized widescreen dashboard with compact controls, aligned metrics, side-by-side 2D and 3D plots, and paired live explanations. Also paired the Laplace, property, and suspension graph sets and reduced desktop navigation overhead."
+  ),
+  list(
+    phase = "21 · Interactive eigenvalue cockpit", title = "Put the algebra beside clearer visuals",
+    prompts = c(
+      "Keep Live matrix and equations on the same screen as both eigenvalue graphs, and investigate better-looking graph designs or toolkits because the current plots are confusing."
+    ),
+    outcome = "Built a three-column cockpit with live algebra beside both plots, replaced overlapping labels and dense wireframes with Plotly hover layers and translucent surfaces, and added mouse rotation, zoom, cleaner legends, and theme-aware visual styling."
   )
 )
 
@@ -1453,8 +1460,8 @@ source_prompts_page <- function() {
       ),
       div(
         class = "prompt-stats",
-        div(strong("20"), span("build milestones")),
-        div(strong("42"), span("source requests reviewed")),
+        div(strong("21"), span("build milestones")),
+        div(strong("43"), span("source requests reviewed")),
         div(strong("2020–2025"), span("finals represented"))
       )
     ),
@@ -1693,11 +1700,35 @@ ui <- fluidPage(
         gap:9px; margin-top:10px; }
       .eigen-equation-grid .formula { min-width:0; margin:0; padding:11px;
         background:#071524; border-color:#244d70; font-size:12px; }
+      .eigen-plot-note { margin:-3px 0 5px; color:var(--muted); font-size:10px;
+        line-height:1.35; }
+      .eigen-dashboard .modebar { background:transparent!important; }
+      .eigen-dashboard .modebar-btn path { fill:#b9d8f2!important; }
+      .eigen-equation-console { display:flex; flex-direction:column; min-width:0;
+        padding:15px!important; overflow:hidden; }
+      .eigen-equation-console h3 { margin:3px 0 4px!important; }
+      .eigen-equation-console>.hint { margin:0 0 7px; font-size:11px; line-height:1.4; }
+      .eigen-equation-console>.formula { margin:5px 0!important; padding:9px 10px!important;
+        font-size:13px; text-align:center; background:#040b12; border-left-width:2px; }
+      .eigen-equation-console>.formula .MathJax_Display { text-align:center!important; }
+      .eigen-equation-list { display:grid; gap:6px; margin:6px 0; }
+      .eigen-equation-row { display:flex; align-items:center; justify-content:space-between;
+        gap:8px; padding:7px 9px; background:#071524; border:1px solid #244d70;
+        border-left:3px solid var(--cyan); border-radius:7px; }
+      .eigen-equation-row.equation-v2 { border-left-color:var(--violet); }
+      .eigen-equation-row.equation-v3 { border-left-color:#d485ff; }
+      .eigen-equation-row .math-inline { min-width:0; color:#edf6ff; font-size:13px; }
+      .eigen-equation-row>span:last-child { flex:0 0 auto; color:var(--muted);
+        font-size:10px; text-transform:uppercase; letter-spacing:.05em; }
+      .equation-details { margin-top:auto; padding-top:7px; border-top:1px solid var(--border); }
+      .equation-details>summary { color:#b9dcff; cursor:pointer; font-size:11px;
+        font-weight:750; }
+      .equation-details>.formula { margin:7px 0 0; padding:8px; font-size:12px; }
       .eigen-3d-story { margin-bottom:20px; }
       .lab-plot-pair { display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
         gap:14px; align-items:stretch; }
       .lab-plot-pair>.card { min-width:0; height:100%; margin-bottom:0; }
-      .eigen-dashboard { display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+      .eigen-dashboard { display:grid; grid-template-columns:repeat(12,minmax(0,1fr));
         gap:14px 16px; align-items:start; }
       .eigen-dashboard>.row,.eigen-dashboard>.row>[class*='col-'] {
         display:contents; float:none; width:auto; }
@@ -1714,9 +1745,9 @@ ui <- fluidPage(
         align-self:center; margin:0; padding:15px 17px; }
       .eigen-dashboard>.eigen-hero>.eigen-memory-line { margin-top:10px; padding:9px 12px; }
       .eigen-dashboard>.eigen-3d-hero { display:none; }
-      .eigen-dashboard .eigen-controls { order:2; grid-column:1; display:grid;
+      .eigen-dashboard .eigen-controls { order:2; grid-column:1 / 7; display:grid;
         grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px 14px; margin:0; padding:15px 17px; }
-      .eigen-dashboard .eigen-3d-controls { order:2; grid-column:2; display:grid;
+      .eigen-dashboard .eigen-3d-controls { order:2; grid-column:7 / 13; display:grid;
         grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px 14px; margin:0; padding:15px 17px; }
       .eigen-dashboard .eigen-controls>h3,.eigen-dashboard .eigen-controls>.hint,
       .eigen-dashboard .eigen-3d-controls>h3,.eigen-dashboard .eigen-3d-controls>.hint {
@@ -1727,8 +1758,8 @@ ui <- fluidPage(
         margin:0 0 3px; line-height:1.4; }
       .eigen-dashboard .eigen-controls .form-group,
       .eigen-dashboard .eigen-3d-controls .form-group { min-width:0; margin:0; }
-      .eigen-dashboard .eigen-2d-presets-card { order:3; grid-column:1; }
-      .eigen-dashboard .eigen-3d-presets-card { order:3; grid-column:2; }
+      .eigen-dashboard .eigen-2d-presets-card { order:3; grid-column:1 / 7; }
+      .eigen-dashboard .eigen-3d-presets-card { order:3; grid-column:7 / 13; }
       .eigen-dashboard .eigen-2d-presets-card,
       .eigen-dashboard .eigen-3d-presets-card { margin:0; padding:11px 15px; }
       .eigen-dashboard .eigen-2d-presets-card>summary,
@@ -1736,8 +1767,8 @@ ui <- fluidPage(
         font-weight:750; }
       .eigen-dashboard .eigen-2d-presets-card>h3,
       .eigen-dashboard .eigen-3d-presets-card>h3 { margin-top:14px; }
-      .eigen-dashboard #eigen_metrics { order:4; grid-column:1; }
-      .eigen-dashboard #eigen_3d_metrics { order:4; grid-column:2; }
+      .eigen-dashboard #eigen_metrics { order:4; grid-column:1 / 7; }
+      .eigen-dashboard #eigen_3d_metrics { order:4; grid-column:7 / 13; }
       .eigen-dashboard #eigen_metrics .metric-row,
       .eigen-dashboard #eigen_3d_metrics .metric-row { margin:0; gap:8px; }
       .eigen-dashboard #eigen_metrics .metric,
@@ -1746,19 +1777,19 @@ ui <- fluidPage(
       .eigen-dashboard #eigen_3d_metrics .metric span { margin-bottom:3px; font-size:10px; }
       .eigen-dashboard #eigen_metrics .metric strong,
       .eigen-dashboard #eigen_3d_metrics .metric strong { font-size:14px; }
-      .eigen-dashboard .eigen-plot-card { order:5; grid-column:1; }
-      .eigen-dashboard .eigen-3d-plot-card { order:5; grid-column:2; }
+      .eigen-dashboard .eigen-plot-card { order:5; grid-column:1 / 5; }
+      .eigen-dashboard .eigen-3d-plot-card { order:5; grid-column:5 / 9; }
       .eigen-dashboard .eigen-plot-card,
       .eigen-dashboard .eigen-3d-plot-card { min-width:0; min-height:0; margin:0; padding:15px; }
       .eigen-dashboard .eigen-plot-card h3,
       .eigen-dashboard .eigen-3d-plot-card h3 { margin-bottom:8px; }
-      .eigen-dashboard #eigen_plot,.eigen-dashboard #eigen_3d_plot { height:390px!important; }
-      .eigen-dashboard #eigen_story { order:6; grid-column:1; }
-      .eigen-dashboard #eigen_3d_story { order:6; grid-column:2; }
+      .eigen-dashboard #eigen_plot,.eigen-dashboard #eigen_3d_plot { height:430px!important; }
+      .eigen-dashboard #eigen_story { order:6; grid-column:1 / 7; }
+      .eigen-dashboard #eigen_3d_story { order:6; grid-column:7 / 13; }
       .eigen-dashboard #eigen_story>.eigen-story,
       .eigen-dashboard #eigen_3d_story>.eigen-story { height:100%; margin:0; }
-      .eigen-dashboard #eigen_3d_equations { order:7; grid-column:1 / -1; }
-      .eigen-dashboard #eigen_3d_equations>.card { margin:0; }
+      .eigen-dashboard #eigen_3d_equations { order:5; grid-column:9 / 13; height:100%; }
+      .eigen-dashboard #eigen_3d_equations>.card { height:100%; margin:0; }
       .eigen-dashboard>.eigen-hack-grid { order:8; grid-column:1 / -1; margin:0; }
       .eigen-dashboard .eigen-quiz { order:9; grid-column:1 / -1; margin:0; }
       .eigen-dashboard>.eigen-exam-guide { order:10; grid-column:1 / -1; margin:0; }
@@ -2206,6 +2237,12 @@ ui <- fluidPage(
       .legacy-mode .eigen-3d-equations>.formula,
       .legacy-mode .eigen-equation-grid .formula { color:#000; background:#ffffe1;
         border:2px inset #fff; border-radius:0; }
+      .legacy-mode .eigen-equation-row { color:#000; background:#ffffe1;
+        border:2px inset #fff; border-radius:0; }
+      .legacy-mode .eigen-equation-row .math-inline { color:#000; }
+      .legacy-mode .eigen-equation-row>span:last-child { color:#333; }
+      .legacy-mode .equation-details>summary { color:#000080; }
+      .legacy-mode .eigen-dashboard .modebar-btn path { fill:#111!important; }
       .legacy-mode .eigen-3d-legend .legend-sphere::before { border-color:#777; }
       .legacy-mode .eigen-feedback { border-radius:0; }
       .legacy-mode .eigen-feedback.correct { color:#000; background:#ccffff;
@@ -3545,17 +3582,11 @@ ui <- fluidPage(
                       uiOutput("eigen_metrics"),
                       div(class = "card plot-wrap eigen-plot-card",
                         h3("Unit circle in → transformed shape out"),
-                        div(class = "eigen-legend",
-                          span(class = "legend-circle", "input circle"),
-                          span(class = "legend-shape", "A(circle)"),
-                          span(class = "legend-v1", "v₁ → λ₁v₁"),
-                          span(class = "legend-v2", "v₂ → λ₂v₂"),
-                          span(class = "legend-probe", "ordinary x → Ax")
-                        ),
+                        div(class = "eigen-plot-note", "Hover for meaning · use the legend to hide or show layers"),
                         div(
                           role = "img",
                           `aria-label` = "An input unit circle, its transformed ellipse or line, two eigenvector axes, and an ordinary test vector before and after the matrix transformation.",
-                          plotOutput("eigen_plot", height = 520)
+                          plotly::plotlyOutput("eigen_plot", height = "430px")
                         )
                       ),
                       uiOutput("eigen_story")
@@ -3613,17 +3644,11 @@ ui <- fluidPage(
                       uiOutput("eigen_3d_metrics"),
                       div(class = "card plot-wrap eigen-3d-plot-card",
                         h3("Unit sphere in → transformed surface out"),
-                        div(class = "eigen-legend eigen-3d-legend",
-                          span(class = "legend-sphere", "input sphere"),
-                          span(class = "legend-shape", "A(sphere)"),
-                          span(class = "legend-v1", "λ₁v₁"),
-                          span(class = "legend-v2", "λ₂v₂"),
-                          span(class = "legend-v3", "λ₃v₃")
-                        ),
+                        div(class = "eigen-plot-note", "Drag to rotate · scroll to zoom · hover for the λ instruction"),
                         div(
                           role = "img",
                           `aria-label` = "A three-dimensional unit sphere and its transformed ellipsoid, disk, line, or point, with the three eigenvector axes drawn through it.",
-                          plotOutput("eigen_3d_plot", height = 560)
+                          plotly::plotlyOutput("eigen_3d_plot", height = "430px")
                         )
                       ),
                       uiOutput("eigen_3d_equations"),
@@ -5018,76 +5043,107 @@ server <- function(input, output, session) {
     )
   })
 
-  output$eigen_plot <- renderPlot({
+  output$eigen_plot <- plotly::renderPlotly({
     d <- eigen_data()
     legacy_plot <- identical(input$ui_theme, "legacy")
-    eigen_palette <- if (legacy_plot) {
+    palette <- if (legacy_plot) {
       list(
-        background = "#ffffff", axis = "#222222", text = "#000000",
-        grid = "#d7d7d7", muted = "#707070", shape = "#008080",
-        v1 = "#0000cc", v2 = "#800080", probe_input = "#606060",
-        probe_output = "#000000"
+        background = "#ffffff", text = "#111111", grid = "#d7d7d7",
+        muted = "#777777", shape = "#008080", v1 = "#003fd1",
+        v2 = "#8a168a", probe = "#202020"
       )
     } else {
       list(
-        background = plot_bg, axis = plot_axis, text = plot_text,
-        grid = plot_grid, muted = plot_muted, shape = plot_emerald,
-        v1 = plot_gold, v2 = plot_ruby, probe_input = "#9fb3c8",
-        probe_output = "#d6e8f7"
+        background = "#05090e", text = "#e9f4ff", grid = "#20354a",
+        muted = "#91a7ba", shape = "#32d8f2", v1 = "#4da3ff",
+        v2 = "#8d96ff", probe = "#f2f7fb"
       )
     }
-    par(
-      bg = eigen_palette$background, fg = eigen_palette$axis,
-      col.axis = eigen_palette$axis, col.lab = eigen_palette$text,
-      mar = c(4.2, 4.4, 1, 1), family = "sans"
-    )
-    theta <- seq(0, 2 * pi, length.out = 500)
+    rgba <- function(color, alpha) {
+      channels <- col2rgb(color)
+      sprintf("rgba(%d,%d,%d,%.2f)", channels[1], channels[2], channels[3], alpha)
+    }
+
+    theta <- seq(0, 2 * pi, length.out = 260)
     circle <- rbind(cos(theta), sin(theta))
     transformed_circle <- d$A %*% circle
-    plot_limit <- max(
-      1.6,
-      1.18 * max(abs(c(transformed_circle, d$transformed_probe)), na.rm = TRUE)
-    )
+    plot_limit <- max(1.6, 1.16 * max(abs(c(transformed_circle, d$transformed_probe)), na.rm = TRUE))
     plot_limit <- min(plot_limit, 5)
-    plot(0, 0, type = "n", xlim = c(-plot_limit, plot_limit),
-         ylim = c(-plot_limit, plot_limit), xlab = "x₁", ylab = "x₂", asp = 1)
-    grid(col = eigen_palette$grid)
-    abline(h = 0, v = 0, col = adjustcolor(eigen_palette$muted, alpha.f = .65))
-    lines(circle[1, ], circle[2, ], col = eigen_palette$muted, lty = 2, lwd = 2)
-    lines(transformed_circle[1, ], transformed_circle[2, ], col = eigen_palette$shape, lwd = 3)
 
-    colors <- c(eigen_palette$v1, eigen_palette$v2)
-    for (i in 1:2) {
-      v <- d$vectors[, i]
-      endpoint <- d$values[i] * v
-      segments(-plot_limit * v[1], -plot_limit * v[2],
-               plot_limit * v[1], plot_limit * v[2],
-               col = adjustcolor(colors[i], alpha.f = .34), lwd = 2)
-      arrows(0, 0, v[1], v[2], length = .08, lwd = 1.5, lty = 3, col = colors[i])
-      if (sqrt(sum(endpoint^2)) > 1e-8) {
-        arrows(0, 0, endpoint[1], endpoint[2], length = .1, lwd = 4, col = colors[i])
-        label_point <- endpoint + .1 * v * sign(d$values[i])
-        text(label_point[1], label_point[2], labels = paste0("λ", i, "v", i),
-             col = eigen_palette$text, cex = .9)
-      } else {
-        points(0, 0, pch = 4, lwd = 3, col = colors[i])
-        text(.45 * v[1], .45 * v[2], labels = paste0("λ", i, "v", i, " = 0"),
-             col = eigen_palette$text, cex = .85)
-      }
+    figure <- plotly::plot_ly(type = "scatter", mode = "lines")
+    figure <- plotly::add_trace(
+      figure, x = circle[1, ], y = circle[2, ], name = "Input circle",
+      line = list(color = palette$muted, width = 2, dash = "dash"),
+      hovertemplate = "<b>Before A</b><br>Unit circle<extra></extra>"
+    )
+    figure <- plotly::add_trace(
+      figure, x = transformed_circle[1, ], y = transformed_circle[2, ],
+      name = "A(circle)", fill = "toself", fillcolor = rgba(palette$shape, .15),
+      line = list(color = palette$shape, width = 4),
+      hovertemplate = "<b>After A</b><br>Transformed boundary<extra></extra>"
+    )
+
+    vector_colors <- c(palette$v1, palette$v2)
+    for (i in seq_len(2)) {
+      lane <- d$vectors[, i]
+      endpoint <- d$values[i] * lane
+      figure <- plotly::add_trace(
+        figure,
+        x = c(-plot_limit * lane[1], plot_limit * lane[1]),
+        y = c(-plot_limit * lane[2], plot_limit * lane[2]),
+        mode = "lines", showlegend = FALSE, hoverinfo = "skip",
+        line = list(color = rgba(vector_colors[i], .27), width = 2, dash = "dot")
+      )
+      figure <- plotly::add_trace(
+        figure,
+        x = c(0, endpoint[1]), y = c(0, endpoint[2]),
+        mode = "lines+markers", name = paste0("λ", i, "v", i),
+        line = list(color = vector_colors[i], width = 7),
+        marker = list(color = vector_colors[i], size = c(3, 9)),
+        hovertemplate = paste0(
+          "<b>Eigen-lane v", i, "</b><br>",
+          "λ", i, " = ", sprintf("%.2f", d$values[i]), "<br>",
+          eigenvalue_effect(d$values[i]), "<extra></extra>"
+        )
+      )
     }
 
-    arrows(0, 0, d$probe[1], d$probe[2], length = .08, lwd = 2, lty = 2,
-           col = eigen_palette$probe_input)
-    text(1.08 * d$probe[1], 1.08 * d$probe[2], labels = "x", col = eigen_palette$text)
-    if (d$transformed_norm > 1e-8) {
-      arrows(0, 0, d$transformed_probe[1], d$transformed_probe[2],
-             length = .1, lwd = 3, col = eigen_palette$probe_output)
-      probe_label <- 1.06 * d$transformed_probe
-      text(probe_label[1], probe_label[2], labels = "Ax", col = eigen_palette$text)
-    } else {
-      points(0, 0, pch = 8, cex = 1.2, col = eigen_palette$probe_output)
-    }
-  }, res = 110)
+    probe_x <- c(0, d$probe[1], NA, 0, d$transformed_probe[1])
+    probe_y <- c(0, d$probe[2], NA, 0, d$transformed_probe[2])
+    figure <- plotly::add_trace(
+      figure, x = probe_x, y = probe_y, mode = "lines+markers", name = "x → Ax",
+      line = list(color = palette$probe, width = 3, dash = "dash"),
+      marker = list(color = palette$probe, size = 6, symbol = "diamond"),
+      hovertemplate = paste0(
+        "<b>Ordinary arrow test</b><br>",
+        if (is.na(d$line_turn)) "Ax collapses to the origin" else sprintf("line-direction change: %.1f°", d$line_turn),
+        "<extra></extra>"
+      )
+    )
+
+    figure <- plotly::layout(
+      figure,
+      paper_bgcolor = palette$background, plot_bgcolor = palette$background,
+      font = list(color = palette$text, family = "Inter, sans-serif", size = 11),
+      margin = list(l = 46, r = 16, b = 42, t = 48),
+      hovermode = "closest",
+      legend = list(orientation = "h", x = 0, y = 1.13, font = list(size = 9)),
+      xaxis = list(
+        title = "x₁", range = c(-plot_limit, plot_limit), zeroline = TRUE,
+        zerolinecolor = palette$muted, gridcolor = palette$grid,
+        color = palette$text, constrain = "domain"
+      ),
+      yaxis = list(
+        title = "x₂", range = c(-plot_limit, plot_limit), zeroline = TRUE,
+        zerolinecolor = palette$muted, gridcolor = palette$grid,
+        color = palette$text, scaleanchor = "x", scaleratio = 1
+      )
+    )
+    plotly::config(
+      figure, displaylogo = FALSE, responsive = TRUE,
+      modeBarButtonsToRemove = c("lasso2d", "select2d", "autoScale2d", "toggleSpikelines")
+    )
+  })
 
   output$eigen_story <- renderUI({
     d <- eigen_data()
@@ -5192,101 +5248,123 @@ server <- function(input, output, session) {
     )
   })
 
-  output$eigen_3d_plot <- renderPlot({
+  output$eigen_3d_plot <- plotly::renderPlotly({
     d <- eigen_3d_data()
     legacy_plot <- identical(input$ui_theme, "legacy")
     palette <- if (legacy_plot) {
       list(
-        background = "#ffffff", axis = "#222222", text = "#000000",
-        grid = "#b8b8b8", sphere = "#777777", shape = "#008080",
-        v1 = "#0000cc", v2 = "#800080", v3 = "#b03030"
+        background = "#ffffff", text = "#111111", grid = "#d5d5d5",
+        sphere_low = "#eeeeee", sphere_high = "#9a9a9a",
+        shape_low = "#bdecea", shape_high = "#008080",
+        v1 = "#003fd1", v2 = "#8a168a", v3 = "#b03030"
       )
     } else {
       list(
-        background = plot_bg, axis = plot_axis, text = plot_text,
-        grid = plot_grid, sphere = "#bfd3e4", shape = "#38d9ff",
-        v1 = "#58aaff", v2 = "#8d96ff", v3 = "#ee9cff"
+        background = "#05090e", text = "#e9f4ff", grid = "#20354a",
+        sphere_low = "#193044", sphere_high = "#b8cad8",
+        shape_low = "#0d5a73", shape_high = "#43e4ff",
+        v1 = "#4da3ff", v2 = "#8d96ff", v3 = "#ee9cff"
       )
     }
 
-    plot_limit <- max(1.35, 1.18 * max(abs(d$values)))
-    par(
-      bg = palette$background, fg = palette$axis,
-      col.axis = palette$axis, col.lab = palette$text,
-      mar = c(2.5, 2.5, 1.5, 2.5), family = "sans"
-    )
-    view <- persp(
-      x = c(-plot_limit, plot_limit),
-      y = c(-plot_limit, plot_limit),
-      z = matrix(0, nrow = 2, ncol = 2),
-      xlim = c(-plot_limit, plot_limit),
-      ylim = c(-plot_limit, plot_limit),
-      zlim = c(-plot_limit, plot_limit),
-      theta = input$eig_3d_azimuth,
-      phi = input$eig_3d_elevation,
-      expand = .72, scale = TRUE,
-      col = NA, border = NA, box = TRUE, axes = TRUE,
-      ticktype = "detailed", nticks = 4,
-      xlab = "x₁", ylab = "x₂", zlab = "x₃"
-    )
+    longitude <- seq(0, 2 * pi, length.out = 35)
+    latitude <- seq(-pi / 2, pi / 2, length.out = 21)
+    sphere_x <- outer(cos(longitude), cos(latitude))
+    sphere_y <- outer(sin(longitude), cos(latitude))
+    sphere_z <- outer(rep(1, length(longitude)), sin(latitude))
+    sphere_points <- rbind(as.vector(sphere_x), as.vector(sphere_y), as.vector(sphere_z))
+    transformed_points <- d$A %*% sphere_points
+    transformed_x <- matrix(transformed_points[1, ], nrow = length(longitude))
+    transformed_y <- matrix(transformed_points[2, ], nrow = length(longitude))
+    transformed_z <- matrix(transformed_points[3, ], nrow = length(longitude))
+    surface_shade <- outer(seq(0, 1, length.out = length(longitude)),
+                           seq(0, 1, length.out = length(latitude)), function(x, y) (x + y) / 2)
+    plot_limit <- max(1.5, 1.18 * max(abs(d$values)))
 
-    project_line <- function(points, color, width = 1, type = 1) {
-      projected <- trans3d(points[1, ], points[2, ], points[3, ], pmat = view)
-      lines(projected$x, projected$y, col = color, lwd = width, lty = type)
-    }
-    sphere_point <- function(longitude, latitude) {
-      rbind(
-        cos(longitude) * cos(latitude),
-        sin(longitude) * cos(latitude),
-        rep(sin(latitude), length(longitude))
+    figure <- plotly::plot_ly()
+    figure <- plotly::add_surface(
+      figure, x = sphere_x, y = sphere_y, z = sphere_z,
+      surfacecolor = surface_shade, opacity = .12, showscale = FALSE,
+      colorscale = list(c(0, palette$sphere_low), c(1, palette$sphere_high)),
+      name = "Input sphere", hoverinfo = "skip", showlegend = TRUE
+    )
+    if (d$rank > 0) {
+      figure <- plotly::add_surface(
+        figure, x = transformed_x, y = transformed_y, z = transformed_z,
+        surfacecolor = surface_shade, opacity = .72, showscale = FALSE,
+        colorscale = list(c(0, palette$shape_low), c(1, palette$shape_high)),
+        name = "A(sphere)", showlegend = TRUE,
+        hovertemplate = "<b>A(sphere)</b><br>x₁=%{x:.2f}<br>x₂=%{y:.2f}<br>x₃=%{z:.2f}<extra></extra>"
+      )
+    } else {
+      figure <- plotly::add_trace(
+        figure, type = "scatter3d", mode = "markers",
+        x = 0, y = 0, z = 0, name = "A(sphere) → origin",
+        marker = list(color = palette$shape_high, size = 8, symbol = "diamond"),
+        hovertemplate = "<b>All dimensions collapsed</b><extra></extra>"
       )
     }
-    draw_wireframe <- function(transform, color, width, type) {
-      longitude <- seq(0, 2 * pi, length.out = 181)
-      for (latitude in seq(-pi / 2, pi / 2, length.out = 9)) {
-        project_line(transform %*% sphere_point(longitude, latitude), color, width, type)
-      }
-      latitude <- seq(-pi / 2, pi / 2, length.out = 121)
-      for (longitude_value in seq(0, 2 * pi, length.out = 13)[-13]) {
-        longitude_vector <- rep(longitude_value, length(latitude))
-        project_line(transform %*% sphere_point(longitude_vector, latitude), color, width, type)
-      }
-    }
-
-    draw_wireframe(diag(3), adjustcolor(palette$sphere, alpha.f = .65), 1, 2)
-    draw_wireframe(d$A, palette$shape, 2, 1)
 
     axis_colors <- c(palette$v1, palette$v2, palette$v3)
-    origin <- trans3d(0, 0, 0, pmat = view)
-    par(xpd = TRUE)
-    for (i in 1:3) {
+    for (i in seq_len(3)) {
       lane <- d$vectors[, i]
-      lane_points <- cbind(-plot_limit * lane, plot_limit * lane)
-      project_line(lane_points, adjustcolor(axis_colors[i], alpha.f = .42), 1.4, 3)
-
-      input_end <- trans3d(lane[1], lane[2], lane[3], pmat = view)
-      arrows(origin$x, origin$y, input_end$x, input_end$y, length = .06, angle = 20,
-             lwd = 1.2, lty = 3, col = axis_colors[i])
-
       endpoint <- d$values[i] * lane
-      if (sqrt(sum(endpoint^2)) > 1e-8) {
-        output_end <- trans3d(endpoint[1], endpoint[2], endpoint[3], pmat = view)
-        arrows(origin$x, origin$y, output_end$x, output_end$y, length = .075, angle = 20,
-               lwd = 3.5, col = axis_colors[i])
-        points(output_end$x, output_end$y, pch = 19, cex = .85, col = axis_colors[i])
-      } else {
-        points(origin$x, origin$y, pch = 4, lwd = 2.5, col = axis_colors[i])
-      }
+      figure <- plotly::add_trace(
+        figure, type = "scatter3d", mode = "lines", showlegend = FALSE,
+        x = c(-plot_limit * lane[1], plot_limit * lane[1]),
+        y = c(-plot_limit * lane[2], plot_limit * lane[2]),
+        z = c(-plot_limit * lane[3], plot_limit * lane[3]),
+        line = list(color = axis_colors[i], width = 2, dash = "dot"),
+        opacity = .38, hoverinfo = "skip"
+      )
+      figure <- plotly::add_trace(
+        figure, type = "scatter3d", mode = "lines+markers", name = paste0("λ", i, "v", i),
+        x = c(0, endpoint[1]), y = c(0, endpoint[2]), z = c(0, endpoint[3]),
+        line = list(color = axis_colors[i], width = 8),
+        marker = list(color = axis_colors[i], size = c(2, 6)),
+        hovertemplate = paste0(
+          "<b>Eigen-lane v", i, "</b><br>",
+          "λ", i, " = ", sprintf("%.2f", d$values[i]), "<br>",
+          eigenvalue_effect(d$values[i]), "<extra></extra>"
+        )
+      )
     }
-  }, res = 115)
+
+    azimuth <- input$eig_3d_azimuth * pi / 180
+    elevation <- input$eig_3d_elevation * pi / 180
+    eye_radius <- 1.65
+    camera_eye <- list(
+      x = eye_radius * cos(elevation) * cos(azimuth),
+      y = eye_radius * cos(elevation) * sin(azimuth),
+      z = eye_radius * sin(elevation)
+    )
+    axis_style <- list(
+      range = c(-plot_limit, plot_limit), color = palette$text,
+      gridcolor = palette$grid, zerolinecolor = palette$grid,
+      backgroundcolor = palette$background, showbackground = TRUE,
+      nticks = 5
+    )
+    figure <- plotly::layout(
+      figure,
+      paper_bgcolor = palette$background,
+      font = list(color = palette$text, family = "Inter, sans-serif", size = 10),
+      margin = list(l = 0, r = 0, b = 0, t = 36),
+      legend = list(orientation = "h", x = 0, y = 1.08, font = list(size = 9)),
+      scene = list(
+        xaxis = c(axis_style, list(title = "x₁")),
+        yaxis = c(axis_style, list(title = "x₂")),
+        zaxis = c(axis_style, list(title = "x₃")),
+        aspectmode = "cube", camera = list(eye = camera_eye), dragmode = "orbit"
+      )
+    )
+    plotly::config(
+      figure, displaylogo = FALSE, responsive = TRUE, scrollZoom = TRUE,
+      modeBarButtonsToRemove = c("toImage", "sendDataToCloud", "resetCameraLastSave3d")
+    )
+  })
 
   output$eigen_3d_equations <- renderUI({
     d <- eigen_3d_data()
-    vector_tex <- function(vector) {
-      vector[abs(vector) < 5e-9] <- 0
-      sprintf("\\begin{bmatrix}%.2f\\\\%.2f\\\\%.2f\\end{bmatrix}",
-              vector[1], vector[2], vector[3])
-    }
     row_tex <- function(row, result_index) {
       sprintf(
         "y_%d=%.2fx_1%+.2fx_2%+.2fx_3",
@@ -5294,43 +5372,47 @@ server <- function(input, output, session) {
       )
     }
     matrix_tex <- sprintf(
-      "A=PDP^T=\\begin{bmatrix}%.2f&%.2f&%.2f\\\\%.2f&%.2f&%.2f\\\\%.2f&%.2f&%.2f\\end{bmatrix}",
+      "A=\\begin{bmatrix}%.2f&%.2f&%.2f\\\\%.2f&%.2f&%.2f\\\\%.2f&%.2f&%.2f\\end{bmatrix}",
       d$A[1, 1], d$A[1, 2], d$A[1, 3],
       d$A[2, 1], d$A[2, 2], d$A[2, 3],
       d$A[3, 1], d$A[3, 2], d$A[3, 3]
     )
-    basis_tex <- sprintf(
-      "P=\\begin{bmatrix}%.2f&%.2f&%.2f\\\\%.2f&%.2f&%.2f\\\\%.2f&%.2f&%.2f\\end{bmatrix}\\qquad D=\\operatorname{diag}(%.2f,%.2f,%.2f)",
+    p_tex <- sprintf(
+      "P=\\begin{bmatrix}%.2f&%.2f&%.2f\\\\%.2f&%.2f&%.2f\\\\%.2f&%.2f&%.2f\\end{bmatrix}",
       d$P[1, 1], d$P[1, 2], d$P[1, 3],
       d$P[2, 1], d$P[2, 2], d$P[2, 3],
-      d$P[3, 1], d$P[3, 2], d$P[3, 3],
+      d$P[3, 1], d$P[3, 2], d$P[3, 3]
+    )
+    diagonal_tex <- sprintf(
+      "D=\\operatorname{diag}(%.2f,%.2f,%.2f)",
       d$values[1], d$values[2], d$values[3]
     )
     component_tex <- paste(
       row_tex(d$A[1, ], 1), row_tex(d$A[2, ], 2), row_tex(d$A[3, ], 3),
       sep = "\\qquad "
     )
-    eigen_equations <- vapply(seq_len(3), function(i) {
-      endpoint <- d$values[i] * d$vectors[, i]
-      sprintf(
-        "A\\mathbf v_%d=%.2f\\mathbf v_%d=%s",
-        i, d$values[i], i, vector_tex(endpoint)
-      )
-    }, character(1))
 
-    div(class = "card eigen-3d-equations",
+    div(class = "card eigen-3d-equations eigen-equation-console",
       div(class = "eyebrow", "Live matrix and equations"),
-      h3("Every number below follows your sliders"),
-      math_block(basis_tex, "P contains the three eigenvector lanes and D contains their three eigenvalues."),
+      h3("Your sliders write this algebra"),
+      tags$p(class = "hint", "Read D as the three simple instructions; A is the combined machine shown in both graphs."),
+      math_block(diagonal_tex, "D contains the three eigenvalue scale and flip instructions."),
       math_block(matrix_tex, "The current three by three symmetric matrix A equals P D P transpose."),
-      math_block(component_tex, "The three component equations that map x to y equals A x."),
-      div(class = "eigen-equation-grid",
+      div(class = "eigen-equation-list",
         lapply(seq_len(3), function(i) {
-          math_block(
-            eigen_equations[i],
-            sprintf("Eigenvector %d is scaled by eigenvalue %.2f.", i, d$values[i])
+          div(class = paste0("eigen-equation-row equation-v", i),
+            math_inline(
+              sprintf("A\\mathbf v_%d=%.2f\\mathbf v_%d", i, d$values[i], i),
+              sprintf("Eigenvector %d is scaled by eigenvalue %.2f.", i, d$values[i])
+            ),
+            span(eigenvalue_short_effect(d$values[i]))
           )
         })
+      ),
+      tags$details(class = "equation-details",
+        tags$summary("Show P and coordinate equations"),
+        math_block(p_tex, "P contains the three perpendicular eigenvector lanes."),
+        math_block(component_tex, "The three component equations that map x to y equals A x.")
       )
     )
   })

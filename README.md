@@ -20,12 +20,12 @@ The app includes:
 ## Run
 
 ```r
-install.packages("shiny")
+install.packages(c("shiny", "plotly"))
 shiny::runApp()
 ```
 
-The app intentionally uses base R plotting, so `shiny` is its only required
-package.
+The app uses base R plotting for most labs and Plotly for the interactive 2D/3D
+eigenvalue cockpit.
 
 ## Comment storage
 

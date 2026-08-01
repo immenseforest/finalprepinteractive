@@ -51,6 +51,7 @@ stopifnot(eigenvalue_short_effect(1) == "same length")
 ui_html <- paste(as.character(ui), collapse = "")
 stopifnot(grepl("eigen-dashboard", ui_html, fixed = TRUE))
 stopifnot(grepl("lab-plot-pair", ui_html, fixed = TRUE))
+stopifnot(grepl("plotly html-widget", ui_html, fixed = TRUE))
 stopifnot(grepl("eigen_plot", ui_html, fixed = TRUE))
 stopifnot(grepl("eigen_3d_plot", ui_html, fixed = TRUE))
 
@@ -94,6 +95,9 @@ shiny::testServer(server, {
   )
   session$flushReact()
 
+  stopifnot(length(output$eigen_plot) > 0)
+  stopifnot(length(output$eigen_3d_plot) > 0)
+
   metrics_html <- paste(as.character(output$eigen_metrics), collapse = "")
   stopifnot(grepl("flip", metrics_html, fixed = TRUE))
 
@@ -108,6 +112,7 @@ shiny::testServer(server, {
 
   equations_3d_html <- paste(as.character(output$eigen_3d_equations), collapse = "")
   stopifnot(grepl("Live matrix and equations", equations_3d_html, fixed = TRUE))
+  stopifnot(grepl("eigen-equation-console", equations_3d_html, fixed = TRUE))
   stopifnot(grepl("A\\\\mathbf v_3", equations_3d_html))
 
   story_3d_html <- paste(as.character(output$eigen_3d_story), collapse = "")
