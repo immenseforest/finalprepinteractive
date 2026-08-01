@@ -206,6 +206,90 @@ eigenvalue_short_effect <- function(value) {
   "stretch"
 }
 
+# ---------- Frontier-inspired rocket stability lab ----------
+build_rocket_slosh_model <- function(control_frequency, slosh_frequency,
+                                     slosh_damping, actuator_lag,
+                                     coupling = .5, controller_damping = .7) {
+  control_frequency <- max(.05, as.numeric(control_frequency))
+  slosh_frequency <- max(.05, as.numeric(slosh_frequency))
+  slosh_damping <- max(0, as.numeric(slosh_damping))
+  actuator_lag <- max(.02, as.numeric(actuator_lag))
+  coupling <- max(0, as.numeric(coupling))
+
+  proportional_gain <- control_frequency^2
+  derivative_gain <- 2 * controller_damping * control_frequency
+
+  # State x = [body angle, body rate, slosh angle, slosh rate, control torque].
+  # This is a deliberately compact teaching model, not SpaceX vehicle data.
+  A <- matrix(0, nrow = 5, ncol = 5)
+  A[1, 2] <- 1
+  A[2, 3] <- coupling * slosh_frequency^2
+  A[2, 5] <- 1
+  A[3, 4] <- 1
+  A[4, 3] <- -slosh_frequency^2
+  A[4, 4] <- -2 * slosh_damping * slosh_frequency
+  A[4, 5] <- -1
+  A[5, 1] <- -proportional_gain / actuator_lag
+  A[5, 2] <- -derivative_gain / actuator_lag
+  A[5, 5] <- -1 / actuator_lag
+
+  decomposition <- eigen(A)
+  eigenvalues <- decomposition$values
+  ordering <- order(Re(eigenvalues), decreasing = TRUE)
+  eigenvalues <- eigenvalues[ordering]
+  eigenvectors <- decomposition$vectors[, ordering, drop = FALSE]
+  rightmost <- max(Re(eigenvalues))
+  verdict <- if (rightmost < -.08) {
+    "Comfortably stable"
+  } else if (rightmost < 0) {
+    "Stable, but low margin"
+  } else {
+    "Unstable"
+  }
+
+  list(
+    A = A,
+    eigenvalues = eigenvalues,
+    eigenvectors = eigenvectors,
+    rightmost = rightmost,
+    verdict = verdict,
+    control_frequency = control_frequency,
+    slosh_frequency = slosh_frequency,
+    slosh_damping = slosh_damping,
+    actuator_lag = actuator_lag,
+    coupling = coupling,
+    controller_damping = controller_damping,
+    mode_gap = abs(control_frequency - slosh_frequency)
+  )
+}
+
+simulate_rocket_slosh <- function(A, seconds = 60, step = .04,
+                                  initial_pitch_deg = 1) {
+  count <- floor(seconds / step) + 1L
+  state <- c(initial_pitch_deg * pi / 180, 0, 0, 0, 0)
+  history <- matrix(NA_real_, nrow = count, ncol = 6)
+  history[1, ] <- c(0, state)
+
+  for (index in 2:count) {
+    k1 <- drop(A %*% state)
+    k2 <- drop(A %*% (state + step * k1 / 2))
+    k3 <- drop(A %*% (state + step * k2 / 2))
+    k4 <- drop(A %*% (state + step * k3))
+    state <- state + step * (k1 + 2 * k2 + 2 * k3 + k4) / 6
+    history[index, ] <- c((index - 1) * step, state)
+  }
+
+  data.frame(
+    time = history[, 1],
+    pitch_deg = history[, 2] * 180 / pi,
+    pitch_rate_deg = history[, 3] * 180 / pi,
+    slosh_deg = history[, 4] * 180 / pi,
+    slosh_rate_deg = history[, 5] * 180 / pi,
+    control = history[, 6],
+    stringsAsFactors = FALSE
+  )
+}
+
 # ---------- Community feedback ----------
 empty_community_comments <- function() {
   data.frame(
@@ -413,7 +497,8 @@ exam_scope_guides <- list(
 community_comments <- reactiveVal(read_community_comments())
 community_active_users <- reactiveVal(0L)
 
-module_header <- function(number, title, description) {
+module_header <- function(number, title, description,
+                          route = "Overview  →  Explore  →  Watch  →  Apply") {
   div(
     class = "module-heading",
     div(class = "module-seal", number),
@@ -421,7 +506,7 @@ module_header <- function(number, title, description) {
       div(class = "module-kicker", "Course module"),
       h2(title),
       tags$p(description),
-      div(class = "module-route", "Overview  →  Explore  →  Watch  →  Apply")
+      div(class = "module-route", route)
     )
   )
 }
@@ -1435,6 +1520,13 @@ source_prompt_story <- list(
       "Keep Live matrix and equations on the same screen as both eigenvalue graphs, and investigate better-looking graph designs or toolkits because the current plots are confusing."
     ),
     outcome = "Built a three-column cockpit with live algebra beside both plots, replaced overlapping labels and dense wireframes with Plotly hover layers and translucent surfaces, and added mouse rotation, zoom, cleaner legends, and theme-aware visual styling."
+  ),
+  list(
+    phase = "22 · Rocket stability frontier", title = "Use eigenvalues on a live aerospace problem",
+    prompts = c(
+      "Under the eigenvalues page, add a simulation that applies eigenvalues to rocket engineering and a frontier problem connected to current SpaceX work, with concise, intuitive guidance."
+    ),
+    outcome = "Added a frontier-inspired Starship propellant-slosh stability lab with a live five-state matrix, complex-plane pole map, 60-second disturbance response, stable and unstable presets, concise design guidance, and primary NASA and SpaceX context."
   )
 )
 
@@ -1460,8 +1552,8 @@ source_prompts_page <- function() {
       ),
       div(
         class = "prompt-stats",
-        div(strong("21"), span("build milestones")),
-        div(strong("43"), span("source requests reviewed")),
+        div(strong("22"), span("build milestones")),
+        div(strong("44"), span("source requests reviewed")),
         div(strong("2020–2025"), span("finals represented"))
       )
     ),
@@ -1793,6 +1885,67 @@ ui <- fluidPage(
       .eigen-dashboard>.eigen-hack-grid { order:8; grid-column:1 / -1; margin:0; }
       .eigen-dashboard .eigen-quiz { order:9; grid-column:1 / -1; margin:0; }
       .eigen-dashboard>.eigen-exam-guide { order:10; grid-column:1 / -1; margin:0; }
+      .rocket-frontier-page { display:grid; gap:16px; }
+      .rocket-hero { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(280px,.8fr);
+        gap:18px; align-items:center; margin:0; overflow:hidden;
+        background:radial-gradient(circle at 88% 16%,rgba(52,172,255,.18),transparent 30%),
+          linear-gradient(145deg,#071524,#03080d); }
+      .rocket-hero-copy p { max-width:900px; margin:7px 0; color:#c8dbea; line-height:1.55; }
+      .rocket-intention { padding:13px 15px; color:#dceeff; background:#071b2d;
+        border:1px solid #2c6090; border-left:4px solid var(--cyan); border-radius:9px; }
+      .rocket-intention strong { display:block; margin-bottom:4px; color:#eef7ff; }
+      .rocket-orbit-sketch { position:relative; min-height:170px; overflow:hidden; }
+      .rocket-orbit-ring { position:absolute; inset:22px 10px; border:1px dashed rgba(107,189,255,.42);
+        border-radius:50%; transform:rotate(-16deg); }
+      .rocket-vehicle { position:absolute; left:50%; top:50%; width:54px; height:126px;
+        transform:translate(-50%,-50%) rotate(18deg); border:2px solid #65c9ff;
+        border-radius:46% 46% 16% 16%; background:linear-gradient(90deg,#081624,#15334a,#081624); }
+      .rocket-vehicle::before { content:''; position:absolute; left:8px; right:8px; top:47px;
+        height:35px; border:1px solid #70d9ff; border-radius:50%;
+        background:linear-gradient(165deg,rgba(64,217,255,.68) 0 46%,rgba(88,113,255,.2) 47%); }
+      .rocket-vehicle::after { content:''; position:absolute; left:14px; right:14px; bottom:-20px;
+        height:22px; background:linear-gradient(#479cff,transparent); clip-path:polygon(15% 0,85% 0,100% 100%,50% 66%,0 100%); }
+      .rocket-sketch-label { position:absolute; right:6px; bottom:1px; color:#9fc9e7;
+        font-size:10px; letter-spacing:.06em; text-transform:uppercase; }
+      .rocket-dashboard { display:grid; grid-template-columns:repeat(12,minmax(0,1fr));
+        gap:14px 16px; align-items:stretch; }
+      .rocket-controls { grid-column:1 / 4; grid-row:1 / 3; margin:0; padding:16px; }
+      .rocket-controls h3 { margin:2px 0 4px; }
+      .rocket-controls>.hint { margin-bottom:10px; }
+      .rocket-controls .form-group { margin-bottom:14px; }
+      .rocket-presets { display:grid; grid-template-columns:1fr; gap:7px; margin:10px 0 14px; }
+      .rocket-presets .btn { width:100%; text-align:left; }
+      .rocket-advanced { padding-top:9px; border-top:1px solid var(--border); }
+      .rocket-advanced>summary { color:#b9dcff; cursor:pointer; font-size:11px; font-weight:750; }
+      .rocket-advanced .form-group { margin:12px 0 0; }
+      .rocket-dashboard #rocket_metrics { grid-column:4 / 13; grid-row:1; align-self:start; }
+      .rocket-dashboard #rocket_metrics .metric-row { margin:0; gap:8px; grid-template-columns:repeat(4,minmax(0,1fr)); }
+      .rocket-dashboard #rocket_metrics .metric { min-width:0; padding:10px 11px; }
+      .rocket-dashboard #rocket_metrics .metric span { font-size:10px; }
+      .rocket-dashboard #rocket_metrics .metric strong { font-size:14px; }
+      .rocket-pole-card { grid-column:4 / 8; grid-row:2; }
+      .rocket-response-card { grid-column:8 / 13; grid-row:2; }
+      .rocket-pole-card,.rocket-response-card { min-width:0; margin:0; padding:15px; }
+      .rocket-pole-card h3,.rocket-response-card h3 { margin:2px 0 3px; }
+      .rocket-dashboard #rocket_pole_plot,.rocket-dashboard #rocket_response_plot { height:390px!important; }
+      .rocket-dashboard #rocket_equations { grid-column:1 / 7; }
+      .rocket-dashboard #rocket_guidance { grid-column:7 / 13; }
+      .rocket-equation-card,.rocket-guidance-card { height:100%; margin:0; }
+      .rocket-equation-card>.formula { margin:9px 0; font-size:12px; }
+      .rocket-eigen-list { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+      .rocket-eigen-chip { min-width:0; padding:8px 9px; color:#dceeff; background:#071524;
+        border:1px solid #244d70; border-radius:7px; font-variant-numeric:tabular-nums; }
+      .rocket-eigen-chip.rightmost { border-color:#49b9ff; box-shadow:inset 3px 0 #49b9ff; }
+      .rocket-eigen-chip strong { display:block; color:#eef7ff; font-size:12px; }
+      .rocket-eigen-chip span { color:var(--muted); font-size:10px; }
+      .rocket-guidance-card .learning-path { margin-bottom:12px; }
+      .rocket-live-rule { padding:12px 14px; color:#d7ecff; background:#071b2d;
+        border-left:4px solid var(--cyan); border-radius:8px; line-height:1.5; }
+      .rocket-live-rule.danger { color:#ffe5e8; background:#251015; border-left-color:#ff6b7d; }
+      .rocket-source-card { margin:0; }
+      .rocket-source-card p { margin:6px 0 10px; }
+      .rocket-source-links { display:flex; flex-wrap:wrap; gap:8px 16px; }
+      .rocket-source-links a { color:#8fceff; font-size:11px; }
       .scope-metric-row { display:grid; grid-template-columns:repeat(4,minmax(0,1fr));
         gap:12px; margin:16px 0 20px; }
       .scope-metric { padding:16px; background:linear-gradient(145deg,#071524,#03080d);
@@ -2249,6 +2402,20 @@ ui <- fluidPage(
         border:2px inset #fff; }
       .legacy-mode .eigen-feedback.retry { color:#000; background:#ffffe1;
         border:2px inset #fff; }
+      .legacy-mode .rocket-hero { color:#000; background:#fff; }
+      .legacy-mode .rocket-hero-copy p { color:#000; }
+      .legacy-mode .rocket-intention,.legacy-mode .rocket-live-rule,
+      .legacy-mode .rocket-eigen-chip { color:#000; background:#ffffe1;
+        border:2px inset #fff; border-radius:0; }
+      .legacy-mode .rocket-live-rule { border-left:5px solid #000080; }
+      .legacy-mode .rocket-live-rule.danger { color:#000; background:#ffd8d8;
+        border-left-color:#800000; }
+      .legacy-mode .rocket-intention strong,.legacy-mode .rocket-eigen-chip strong { color:#000080; }
+      .legacy-mode .rocket-advanced>summary { color:#000080; }
+      .legacy-mode .rocket-orbit-ring { border-color:#000080; }
+      .legacy-mode .rocket-vehicle { border-color:#000080; background:#c0c0c0; }
+      .legacy-mode .rocket-sketch-label,.legacy-mode .rocket-eigen-chip span { color:#444; }
+      .legacy-mode .rocket-source-links a { color:#0000ee; }
       .legacy-mode .scope-metric,.legacy-mode .scope-callout,
       .legacy-mode .scope-guide-block,.legacy-mode .study-budget>div {
         color:#000; background:#ffffe1; border:2px inset #fff; border-radius:0; }
@@ -2402,7 +2569,7 @@ ui <- fluidPage(
       }
       @media(max-width:1050px){ #main_navigation{grid-template-columns:repeat(3,minmax(0,1fr));position:static;} }
       @media(max-width:950px){
-        .lab-plot-pair,.eigen-dashboard{grid-template-columns:1fr;}
+        .lab-plot-pair,.eigen-dashboard,.rocket-dashboard{grid-template-columns:1fr;}
         .eigen-dashboard>.eigen-hero,.eigen-dashboard .eigen-controls,
         .eigen-dashboard .eigen-3d-controls,.eigen-dashboard .eigen-2d-presets-card,
         .eigen-dashboard .eigen-3d-presets-card,.eigen-dashboard #eigen_metrics,
@@ -2413,12 +2580,18 @@ ui <- fluidPage(
         .eigen-dashboard>.eigen-exam-guide{grid-column:1!important;}
         .eigen-dashboard>.eigen-hero{grid-template-columns:1fr;}
         .eigen-dashboard>.eigen-hero>.formula{grid-column:1;grid-row:auto;margin-top:10px;}
+        .rocket-controls,.rocket-dashboard #rocket_metrics,.rocket-pole-card,
+        .rocket-response-card,.rocket-dashboard #rocket_equations,
+        .rocket-dashboard #rocket_guidance{grid-column:1!important;grid-row:auto!important;}
+        .rocket-hero{grid-template-columns:1fr;}
+        .rocket-orbit-sketch{min-height:130px;}
       }
       @media(max-width:800px){ .concept,.video-grid{grid-template-columns:1fr;} .hero{padding:30px 20px;}
         .content{padding:22px 16px;} .metric-row{grid-template-columns:1fr;}
         .eigen-hack-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
         .eigen-story-grid{grid-template-columns:1fr;}
         .eigen-equation-grid{grid-template-columns:1fr;}
+        .rocket-dashboard #rocket_metrics .metric-row,.rocket-eigen-list{grid-template-columns:1fr;}
         .scope-metric-row{grid-template-columns:repeat(2,minmax(0,1fr));}
         .study-budget{grid-template-columns:1fr;}
         .module-heading{grid-template-columns:1fr;} .module-seal{width:46px;height:46px;}
@@ -3292,6 +3465,121 @@ ui <- fluidPage(
                     )
                   )
                 ),
+                { rocket_stability_tab <- function() tabPanel("4 · Frontier: Rocket Stability",
+                  div(class = "rocket-frontier-page",
+                    div(class = "card rocket-hero",
+                      div(class = "rocket-hero-copy",
+                        div(class = "eyebrow", "Rocket engineering · low-gravity propellant control"),
+                        h2("Keep a refueling Starship steady while its propellant moves"),
+                        tags$p(
+                          strong("ELI5: "),
+                          "Imagine balancing a tall broom while carrying a half-full cup. The control thrusters correct the vehicle, but the liquid reacts a moment later. If both motions find the wrong rhythm, each correction can make the next wobble larger."
+                        ),
+                        div(class = "rocket-intention",
+                          strong("Intention of this page"),
+                          span(
+                            "Use eigenvalues as an engineering warning system. Tune a compact rocket-and-slosh model, watch its poles move, and connect their locations to the motion you would actually see."
+                          )
+                        ),
+                        tags$p(class = "hint",
+                          "Frontier-inspired teaching model only: the equations and default values are public educational approximations, not SpaceX design data or flight predictions."
+                        )
+                      ),
+                      div(class = "rocket-orbit-sketch", role = "img",
+                          `aria-label` = "A simplified spacecraft in orbit with a partially filled propellant tank.",
+                        div(class = "rocket-orbit-ring"),
+                        div(class = "rocket-vehicle"),
+                        span(class = "rocket-sketch-label", "body motion + liquid motion + control lag")
+                      )
+                    ),
+                    div(class = "rocket-dashboard",
+                      div(class = "card rocket-controls",
+                        div(class = "eyebrow", "Your control desk"),
+                        h3("Change one cause at a time"),
+                        tags$p(class = "hint", "Start with a preset, predict the pole movement, then tune the sliders."),
+                        div(class = "rocket-presets",
+                          actionButton("rocket_preset_stable", "1 · Stable separation"),
+                          actionButton("rocket_preset_resonance", "2 · Resonance warning"),
+                          actionButton("rocket_preset_unstable", "3 · Control-lag instability")
+                        ),
+                        sliderInput(
+                          "rocket_control_frequency",
+                          tagList("Controller speed ωc", help_tip("How quickly the attitude controller tries to erase a tilt. Faster is not automatically safer when the actuator and liquid lag behind.")),
+                          min = .3, max = 1.6, value = .7, step = .05, ticks = FALSE,
+                          post = " rad/s"
+                        ),
+                        sliderInput(
+                          "rocket_slosh_frequency",
+                          tagList("Propellant slosh rhythm ωs", help_tip("The natural back-and-forth rhythm of the liquid in a simplified tank model.")),
+                          min = .2, max = 1.5, value = .85, step = .05, ticks = FALSE,
+                          post = " rad/s"
+                        ),
+                        sliderInput(
+                          "rocket_slosh_damping",
+                          tagList("Slosh damping ζs", help_tip("How quickly the liquid wave loses energy. More damping makes the slosh eigenvalues move farther left.")),
+                          min = .005, max = .25, value = .08, step = .005, ticks = FALSE
+                        ),
+                        sliderInput(
+                          "rocket_actuator_lag",
+                          tagList("Control response lag τ", help_tip("How long the commanded correction takes to build. Too much lag can make an aggressive controller push at the wrong time.")),
+                          min = .05, max = 1.2, value = .22, step = .01, ticks = FALSE,
+                          post = " s"
+                        ),
+                        tags$details(class = "rocket-advanced",
+                          tags$summary("Advanced: liquid-to-body coupling"),
+                          sliderInput(
+                            "rocket_coupling",
+                            tagList("Coupling β", help_tip("How strongly the moving propellant pushes back on vehicle attitude in this teaching model.")),
+                            min = .1, max = .9, value = .5, step = .05, ticks = FALSE
+                          )
+                        )
+                      ),
+                      uiOutput("rocket_metrics"),
+                      div(class = "card plot-wrap rocket-pole-card",
+                        h3("Eigenvalue stability map"),
+                        div(class = "eigen-plot-note", "The rightmost dot decides · every dot must stay left of zero"),
+                        div(role = "img",
+                            `aria-label` = "Complex-plane plot of the five rocket stability eigenvalues.",
+                          plotly::plotlyOutput("rocket_pole_plot", height = "390px")
+                        )
+                      ),
+                      div(class = "card plot-wrap rocket-response-card",
+                        h3("What a 1° attitude nudge becomes"),
+                        div(class = "eigen-plot-note", "Body pitch and propellant slosh over the next 60 seconds"),
+                        div(role = "img",
+                            `aria-label` = "Time response of rocket pitch and propellant slosh after a one degree disturbance.",
+                          plotly::plotlyOutput("rocket_response_plot", height = "390px")
+                        )
+                      ),
+                      uiOutput("rocket_equations"),
+                      uiOutput("rocket_guidance")
+                    ),
+                    div(class = "card rocket-source-card",
+                      div(class = "eyebrow", "Why this is a frontier problem"),
+                      h3("The real challenge behind the teaching model"),
+                      tags$p(
+                        "NASA reports that Starship development includes understanding how super-cooled propellant slosh affects orbital stability, settling fluid for transfer, and preserving conditions for engine restart. NASA flight-dynamics work also identifies low-gravity slosh models and Starship-depot operations as active Human Landing System research."
+                      ),
+                      div(class = "rocket-source-links",
+                        tags$a("NASA · Starship test and cryogenic-fluid objectives",
+                               href = "https://www.nasa.gov/directorates/esdmd/artemis-campaign-development-division/human-landing-system-program/nasa-artemis-mission-progresses-with-spacex-starship-test-flight/",
+                               target = "_blank", rel = "noopener noreferrer"),
+                        tags$a("NASA TechPort · large-scale orbital cryogenic transfer",
+                               href = "https://techport.nasa.gov/projects/116764",
+                               target = "_blank", rel = "noopener noreferrer"),
+                        tags$a("NASA Flight Dynamics · low-g slosh and Starship-depot operations",
+                               href = "https://ntrs.nasa.gov/api/citations/20250002463/downloads/acgsc134_larc.pdf",
+                               target = "_blank", rel = "noopener noreferrer"),
+                        tags$a("NASA NTRS · eigenvalue-based launch-vehicle stability analysis",
+                               href = "https://ntrs.nasa.gov/citations/20100035659",
+                               target = "_blank", rel = "noopener noreferrer"),
+                        tags$a("SpaceX · Moon architecture and on-orbit refilling",
+                               href = "https://www.spacex.com/humanspaceflight/moon",
+                               target = "_blank", rel = "noopener noreferrer")
+                      )
+                    )
+                  )
+                ); NULL },
                 tabPanel("4 · Watch: Videos",
                   video_lesson_page(
                     "Differential equations",
@@ -3405,7 +3693,8 @@ ui <- fluidPage(
             ),
             tabPanel("3 · Linear Algebra", value = "linear_algebra",
               module_header("III", "Linear algebra",
-                "Move from systems and determinants to eigenvectors, diagonalization, and structural applications."),
+                "Move from systems and determinants to eigenvectors, diagonalization, and structural applications.",
+                "Overview  →  Explore  →  Frontier  →  Watch  →  Apply"),
               tabsetPanel(id = "linear_algebra_navigation", type = "pills",
                 tabPanel("1 · Overview",
                   div(class = "card",
@@ -3684,7 +3973,8 @@ ui <- fluidPage(
                   )
                   )
                 ),
-                tabPanel("4 · Watch: Videos",
+                rocket_stability_tab(),
+                tabPanel("5 · Watch: Videos",
                   video_lesson_page(
                     "Linear algebra",
                     paste(
@@ -3696,7 +3986,7 @@ ui <- fluidPage(
                     "https://www.video-tutor.net/matrices.html"
                   )
                 ),
-                tabPanel("5 · Apply: Engineering",
+                tabPanel("6 · Apply: Engineering",
                   div(class = "card",
                     div(class = "eyebrow", "Structural engineering"),
                     h2("Solving forces at a truss joint"),
@@ -5482,6 +5772,279 @@ server <- function(input, output, session) {
         )
       )
     )
+  })
+
+  rocket_data <- reactive({
+    model <- build_rocket_slosh_model(
+      input$rocket_control_frequency,
+      input$rocket_slosh_frequency,
+      input$rocket_slosh_damping,
+      input$rocket_actuator_lag,
+      input$rocket_coupling
+    )
+    model$response <- simulate_rocket_slosh(model$A)
+    model$peak_pitch <- max(abs(model$response$pitch_deg), na.rm = TRUE)
+    model$peak_slosh <- max(abs(model$response$slosh_deg), na.rm = TRUE)
+    model
+  })
+
+  output$rocket_metrics <- renderUI({
+    d <- rocket_data()
+    div(class = "metric-row",
+      div(class = "metric",
+        span("System verdict"),
+        strong(d$verdict)
+      ),
+      div(class = "metric",
+        span("Rightmost Re(λ)"),
+        strong(sprintf("%+.3f s⁻¹", d$rightmost))
+      ),
+      div(class = "metric",
+        span("Control–slosh frequency gap"),
+        strong(sprintf("%.2f rad/s", d$mode_gap))
+      ),
+      div(class = "metric",
+        span("Peak |pitch| after 1° nudge"),
+        strong(if (d$peak_pitch > 999) ">999°" else sprintf("%.1f°", d$peak_pitch))
+      )
+    )
+  })
+
+  output$rocket_pole_plot <- plotly::renderPlotly({
+    d <- rocket_data()
+    legacy_plot <- identical(input$ui_theme, "legacy")
+    palette <- if (legacy_plot) {
+      list(background = "#ffffff", text = "#111111", grid = "#d7d7d7",
+           stable = "#006f8a", warning = "#b06000", danger = "#b00020",
+           boundary = "#990000")
+    } else {
+      list(background = "#05090e", text = "#e9f4ff", grid = "#20354a",
+           stable = "#35d8f2", warning = "#ffb454", danger = "#ff6075",
+           boundary = "#ff6075")
+    }
+    values <- d$eigenvalues
+    real_values <- Re(values)
+    imaginary_values <- Im(values)
+    plotted_real <- pmax(real_values, -6)
+    rightmost_index <- which.max(real_values)[1]
+    other_indices <- setdiff(seq_along(values), rightmost_index)
+    point_colors <- ifelse(real_values < -.08, palette$stable,
+                           ifelse(real_values < 0, palette$warning, palette$danger))
+    pole_label <- function(index) {
+      sprintf("λ%d = %+.3f %+.3fi", index, real_values[index], imaginary_values[index])
+    }
+    hover_text <- vapply(seq_along(values), function(index) {
+      paste0(
+        "<b>", pole_label(index), "</b><br>",
+        if (real_values[index] < 0) "Left half-plane: this mode decays" else "Right half-plane: this mode grows",
+        if (real_values[index] < -6) "<br>Displayed at −6 so the slower poles remain readable" else ""
+      )
+    }, character(1))
+
+    figure <- plotly::plot_ly(type = "scatter", mode = "markers")
+    if (length(other_indices)) {
+      figure <- plotly::add_trace(
+        figure,
+        x = plotted_real[other_indices], y = imaginary_values[other_indices],
+        text = hover_text[other_indices], hovertemplate = "%{text}<extra></extra>",
+        marker = list(size = 11, color = point_colors[other_indices],
+                      line = list(width = 1, color = palette$background)),
+        name = "Other modes", showlegend = FALSE
+      )
+    }
+    figure <- plotly::add_trace(
+      figure,
+      x = plotted_real[rightmost_index], y = imaginary_values[rightmost_index],
+      text = hover_text[rightmost_index], hovertemplate = "%{text}<extra></extra>",
+      marker = list(size = 15, symbol = "diamond", color = point_colors[rightmost_index],
+                    line = list(width = 2, color = palette$text)),
+      name = "Rightmost mode", showlegend = FALSE
+    )
+
+    imaginary_limit <- max(2, 1.15 * max(abs(imaginary_values)))
+    figure <- plotly::layout(
+      figure,
+      paper_bgcolor = palette$background, plot_bgcolor = palette$background,
+      font = list(color = palette$text, family = "Inter, sans-serif", size = 11),
+      margin = list(l = 48, r = 16, b = 44, t = 24),
+      hovermode = "closest",
+      shapes = list(
+        list(type = "rect", x0 = -6.2, x1 = 0, y0 = -imaginary_limit, y1 = imaginary_limit,
+             fillcolor = if (legacy_plot) "rgba(0,111,138,.06)" else "rgba(53,216,242,.06)",
+             line = list(width = 0), layer = "below"),
+        list(type = "rect", x0 = 0, x1 = .65, y0 = -imaginary_limit, y1 = imaginary_limit,
+             fillcolor = if (legacy_plot) "rgba(176,0,32,.08)" else "rgba(255,96,117,.09)",
+             line = list(width = 0), layer = "below"),
+        list(type = "line", x0 = 0, x1 = 0, y0 = -imaginary_limit, y1 = imaginary_limit,
+             line = list(color = palette$boundary, width = 2))
+      ),
+      annotations = list(
+        list(x = -5.85, y = imaginary_limit * .9, text = "decays", showarrow = FALSE,
+             xanchor = "left", font = list(color = palette$stable, size = 10)),
+        list(x = .55, y = imaginary_limit * .9, text = "grows", showarrow = FALSE,
+             xanchor = "right", font = list(color = palette$danger, size = 10))
+      ),
+      xaxis = list(title = "real part Re(λ)  [growth / decay rate]", range = c(-6.2, .65),
+                   gridcolor = palette$grid, zeroline = FALSE, color = palette$text),
+      yaxis = list(title = "imaginary part Im(λ)  [oscillation rate]",
+                   range = c(-imaginary_limit, imaginary_limit), gridcolor = palette$grid,
+                   zerolinecolor = palette$grid, color = palette$text)
+    )
+    plotly::config(
+      figure, displaylogo = FALSE, responsive = TRUE,
+      modeBarButtonsToRemove = c("lasso2d", "select2d", "autoScale2d", "toggleSpikelines")
+    )
+  })
+
+  output$rocket_response_plot <- plotly::renderPlotly({
+    d <- rocket_data()
+    response <- d$response
+    legacy_plot <- identical(input$ui_theme, "legacy")
+    palette <- if (legacy_plot) {
+      list(background = "#ffffff", text = "#111111", grid = "#d7d7d7",
+           pitch = "#006f8a", slosh = "#6e2383", limit = "#b00020")
+    } else {
+      list(background = "#05090e", text = "#e9f4ff", grid = "#20354a",
+           pitch = "#35d8f2", slosh = "#9b8cff", limit = "#ff6075")
+    }
+    plot_cap <- 20
+    pitch_plot <- pmax(pmin(response$pitch_deg, plot_cap), -plot_cap)
+    slosh_plot <- pmax(pmin(response$slosh_deg, plot_cap), -plot_cap)
+    clipped <- any(abs(c(response$pitch_deg, response$slosh_deg)) > plot_cap)
+    visible_peak <- max(abs(c(pitch_plot, slosh_plot)))
+    y_limit <- min(plot_cap, max(3.6, 1.12 * visible_peak))
+
+    figure <- plotly::plot_ly()
+    figure <- plotly::add_trace(
+      figure, x = response$time, y = pitch_plot, type = "scatter", mode = "lines",
+      name = "Vehicle pitch θ", line = list(color = palette$pitch, width = 3),
+      hovertemplate = "<b>Vehicle pitch</b><br>t=%{x:.1f} s<br>θ=%{y:.2f}°<extra></extra>"
+    )
+    figure <- plotly::add_trace(
+      figure, x = response$time, y = slosh_plot, type = "scatter", mode = "lines",
+      name = "Propellant slosh φ", line = list(color = palette$slosh, width = 2),
+      hovertemplate = "<b>Propellant slosh</b><br>t=%{x:.1f} s<br>φ=%{y:.2f}°<extra></extra>"
+    )
+    annotations <- if (clipped) {
+      list(list(x = 59, y = y_limit * .88, text = "motion clipped at ±20°",
+                showarrow = FALSE, xanchor = "right",
+                font = list(color = palette$limit, size = 10)))
+    } else {
+      list()
+    }
+    figure <- plotly::layout(
+      figure,
+      paper_bgcolor = palette$background, plot_bgcolor = palette$background,
+      font = list(color = palette$text, family = "Inter, sans-serif", size = 11),
+      margin = list(l = 50, r = 16, b = 44, t = 42),
+      legend = list(orientation = "h", x = 0, y = 1.1, font = list(size = 9)),
+      annotations = annotations,
+      shapes = list(
+        list(type = "line", x0 = 0, x1 = 60, y0 = 3, y1 = 3,
+             line = list(color = palette$limit, width = 1, dash = "dot")),
+        list(type = "line", x0 = 0, x1 = 60, y0 = -3, y1 = -3,
+             line = list(color = palette$limit, width = 1, dash = "dot"))
+      ),
+      xaxis = list(title = "time after disturbance (s)", range = c(0, 60),
+                   gridcolor = palette$grid, color = palette$text),
+      yaxis = list(title = "angle (degrees)", range = c(-y_limit, y_limit),
+                   gridcolor = palette$grid, zerolinecolor = palette$grid, color = palette$text)
+    )
+    plotly::config(
+      figure, displaylogo = FALSE, responsive = TRUE,
+      modeBarButtonsToRemove = c("lasso2d", "select2d", "autoScale2d", "toggleSpikelines")
+    )
+  })
+
+  output$rocket_equations <- renderUI({
+    d <- rocket_data()
+    format_complex <- function(value) {
+      if (abs(Im(value)) < 5e-5) {
+        sprintf("%+.3f", Re(value))
+      } else {
+        sprintf("%+.3f %+.3fi", Re(value), Im(value))
+      }
+    }
+    rows <- apply(d$A, 1, function(row) paste(sprintf("%.2f", row), collapse = "&"))
+    matrix_tex <- paste0("A=\\begin{bmatrix}", paste(rows, collapse = "\\\\"), "\\end{bmatrix}")
+
+    div(class = "card rocket-equation-card",
+      div(class = "eyebrow", "Live state matrix"),
+      h3("Five states produce five eigenvalues"),
+      tags$p(class = "hint",
+        "θ is vehicle pitch, q is pitch rate, φ is liquid slosh angle, r is slosh rate, and u is the delayed control action."
+      ),
+      math_block("\\dot{\\mathbf{x}}=A\\mathbf{x},\\qquad \\mathbf{x}=[\\theta\\;q\\;\\phi\\;r\\;u]^T",
+                 "The five-state rocket teaching model x dot equals A x."),
+      div(class = "rocket-eigen-list",
+        lapply(seq_along(d$eigenvalues), function(index) {
+          value <- d$eigenvalues[index]
+          div(class = paste("rocket-eigen-chip", if (index == 1) "rightmost" else ""),
+            strong(paste0("λ", index, " = ", format_complex(value))),
+            span(if (Re(value) < 0) "decays" else "grows")
+          )
+        })
+      ),
+      tags$details(class = "equation-details",
+        tags$summary("Show the live 5 × 5 matrix A"),
+        math_block(matrix_tex, "The current five by five state matrix for the rocket and propellant teaching model.")
+      )
+    )
+  })
+
+  output$rocket_guidance <- renderUI({
+    d <- rocket_data()
+    mission_passed <- d$rightmost < -.08 && d$peak_pitch < 3
+    live_text <- if (d$rightmost >= 0) {
+      sprintf(
+        "A mode crossed to Re(λ)=%.3f. That positive real part means the wobble grows instead of fading. Reduce control speed or lag, add slosh damping, or weaken the coupling.",
+        d$rightmost
+      )
+    } else if (d$rightmost >= -.08) {
+      sprintf(
+        "Every mode decays, but the rightmost pole at %.3f is close to zero. The response may take a long time to settle and has little robustness margin.",
+        d$rightmost
+      )
+    } else {
+      sprintf(
+        "Every pole is safely left of zero; the slowest mode decays at %.3f s⁻¹. The time graph should settle rather than grow.",
+        d$rightmost
+      )
+    }
+
+    div(class = "card rocket-guidance-card",
+      div(class = "eyebrow", "Concise design mission"),
+      h3(if (mission_passed) "Mission passed: stable with margin" else "Mission: recover stability margin"),
+      tags$ol(class = "learning-path",
+        tags$li(strong("Find the deciding dot. "), "The eigenvalue with the largest real part controls the stability verdict."),
+        tags$li(strong("Keep every dot left. "), "Re(λ)<0 means decay; Re(λ)>0 means growing motion."),
+        tags$li(strong("Aim beyond barely stable. "), "For this exercise, target max Re(λ)<−0.08 s⁻¹ and peak pitch below 3°."),
+        tags$li(strong("Watch rhythm and delay together. "), "A fast controller can become harmful when actuator lag and lightly damped liquid motion add phase delay."),
+        tags$li(strong("Verify in time. "), "The pole map predicts the trend; the 60-second graph makes the consequence visible.")
+      ),
+      div(class = paste("rocket-live-rule", if (d$rightmost >= 0) "danger" else ""),
+        strong("What the current settings mean: "), live_text
+      )
+    )
+  })
+
+  set_rocket_controls <- function(control_frequency, slosh_frequency,
+                                  slosh_damping, actuator_lag, coupling) {
+    updateSliderInput(session, "rocket_control_frequency", value = control_frequency)
+    updateSliderInput(session, "rocket_slosh_frequency", value = slosh_frequency)
+    updateSliderInput(session, "rocket_slosh_damping", value = slosh_damping)
+    updateSliderInput(session, "rocket_actuator_lag", value = actuator_lag)
+    updateSliderInput(session, "rocket_coupling", value = coupling)
+  }
+
+  observeEvent(input$rocket_preset_stable, {
+    set_rocket_controls(.55, 1.10, .12, .15, .35)
+  })
+  observeEvent(input$rocket_preset_resonance, {
+    set_rocket_controls(.85, .85, .02, .45, .65)
+  })
+  observeEvent(input$rocket_preset_unstable, {
+    set_rocket_controls(1.50, .80, .02, 1.20, .70)
   })
 
   set_eigen_controls <- function(angle, lambda1, lambda2, probe) {

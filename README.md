@@ -10,6 +10,9 @@ The app includes:
 - Linear-system lab and a concept-first eigenvalue pattern decoder with
   transformed-circle and camera-controlled 3D sphere simulations, stable
   eigen-directions, live matrices/equations, presets, and prediction checks
+- A frontier-inspired rocket stability lab that connects eigenvalues to
+  low-gravity propellant slosh, control lag, orbital refueling, and a live
+  five-state disturbance simulation
 - Widescreen learning cockpits that align related plots side by side while
   automatically stacking them on tablets and phones
 - Exam coverage map with matrix-size frequencies, difficulty proxies,
@@ -24,8 +27,8 @@ install.packages(c("shiny", "plotly"))
 shiny::runApp()
 ```
 
-The app uses base R plotting for most labs and Plotly for the interactive 2D/3D
-eigenvalue cockpit.
+The app uses base R plotting for most labs and Plotly for the interactive
+eigenvalue and rocket-stability cockpits.
 
 ## Comment storage
 
