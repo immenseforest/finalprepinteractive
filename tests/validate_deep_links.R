@@ -7,6 +7,8 @@ Sys.setenv(FINALPREP_COMMENT_DIR = test_store)
 
 source("app.R")
 
+stopifnot(route_scalar("  ?page=exam-practice  ") == "?page=exam-practice")
+
 home <- resolve_app_route(list())
 stopifnot(home$page == "home")
 stopifnot(home$main_value == "app_about")

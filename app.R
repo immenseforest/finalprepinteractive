@@ -139,8 +139,8 @@ app_route_map <- list(
   `source-prompts` = list(main = "source_prompts")
 )
 
-route_scalar <- function(query, name) {
-  value <- query[[name]]
+route_scalar <- function(query, name = NULL) {
+  value <- if (is.null(name)) query else query[[name]]
   if (is.null(value) || !length(value)) return("")
   trimws(as.character(value[[1]]))
 }
@@ -3370,14 +3370,30 @@ ui <- fluidPage(
           }, true);
         }
 
+        function initializeRouteRestoreAck() {
+          if (!window.Shiny || !Shiny.addCustomMessageHandler ||
+              document.documentElement.dataset.routeRestoreAck === 'true') return;
+          document.documentElement.dataset.routeRestoreAck = 'true';
+          Shiny.addCustomMessageHandler('finalprep-route-restored', function (message) {
+            document.documentElement.dataset.routeReady = message.query;
+            Shiny.setInputValue('route_restore_ack', message.query, {priority: 'event'});
+          });
+        }
+
+        if (window.jQuery) {
+          window.jQuery(document).on('shiny:connected', initializeRouteRestoreAck);
+        }
+
         if (document.readyState === 'loading') {
           document.addEventListener('DOMContentLoaded', function () {
             initializeThemeToggle();
             initializeRocketGameInputSync();
+            initializeRouteRestoreAck();
           });
         } else {
           initializeThemeToggle();
           initializeRocketGameInputSync();
+          initializeRouteRestoreAck();
         }
       })();
     "))
@@ -5291,7 +5307,6 @@ server <- function(input, output, session) {
     if (!is.null(route$example_nav_id) && !is.null(route$example_value)) {
       updateTabsetPanel(session, route$example_nav_id, selected = route$example_value)
     }
-
     session$onFlushed(function() {
       if (!identical(isolate(session$clientData$url_search), target_query)) {
         route_state$last_written <- target_query
@@ -5302,14 +5317,33 @@ server <- function(input, output, session) {
         route_state$restoring <- FALSE
         route_state$target <- NULL
       }
+      session$sendCustomMessage(
+        "finalprep-route-restored",
+        list(query = target_query)
+      )
     }, once = TRUE)
   }
+
+  observeEvent(input$route_restore_ack, {
+    acknowledged_query <- route_scalar(input$route_restore_ack)
+    if (isTRUE(route_state$restoring) &&
+        identical(route_state$target, acknowledged_query)) {
+      route_state$restoring <- FALSE
+      route_state$target <- NULL
+      selected <- current_tab_route()
+      if (!identical(selected$query, acknowledged_query) &&
+          !identical(session$clientData$url_search, selected$query)) {
+        route_state$last_written <- selected$query
+        updateQueryString(selected$query, mode = "push", session = session)
+      }
+    }
+  }, ignoreInit = FALSE)
 
   observe({
     query <- shiny::getQueryString(session)
     current_search <- session$clientData$url_search
-    if (!is.null(route_state$last_written) &&
-        identical(current_search, route_state$last_written)) {
+    last_written <- isolate(route_state$last_written)
+    if (!is.null(last_written) && identical(current_search, last_written)) {
       route_state$last_written <- NULL
       return()
     }
