@@ -90,6 +90,126 @@ truss_presets <- list(
 nav_items <- c("Transform Explorer" = "explorer", "Property Lab" = "properties",
                "Quick Reference" = "reference")
 
+# ---------- Shareable page routes ----------
+# Friendly URL slugs are kept separate from Shiny input values so page links
+# stay readable even if the visible navigation labels change later.
+app_route_map <- list(
+  home = list(main = "app_about"),
+  laplace = list(
+    main = "laplace", nav_id = "laplace_navigation", default_section = "overview",
+    sections = c(
+      overview = "laplace_about", `transform-explorer` = "explorer",
+      `property-lab` = "properties", videos = "laplace_videos",
+      engineering = "engineering"
+    ),
+    example_nav_id = "engineering_navigation", default_example = "mechanical-suspension",
+    examples = c(
+      `mechanical-suspension` = "mechanical", `chemical-mixing` = "chemical",
+      `civil-vibration` = "civil"
+    )
+  ),
+  `differential-equations` = list(
+    main = "differential", nav_id = "differential_navigation", default_section = "overview",
+    sections = c(
+      overview = "differential_about", `linear-odes` = "differential_linear_odes",
+      systems = "differential_systems", videos = "differential_videos",
+      engineering = "differential_engineering"
+    )
+  ),
+  `linear-algebra` = list(
+    main = "linear_algebra", nav_id = "linear_algebra_navigation", default_section = "overview",
+    sections = c(
+      overview = "linear_algebra_about", systems = "linear_algebra_systems",
+      eigenvalues = "linear_algebra_eigenvalues", `rocket-stability` = "rocket_stability",
+      `rocket-balancer` = "rocket_balancer", videos = "linear_algebra_videos",
+      engineering = "linear_algebra_engineering"
+    )
+  ),
+  `exam-practice` = list(
+    main = "exam_coach", nav_id = "exam_navigation", default_section = "roadmap-practice",
+    sections = c(`roadmap-practice` = "exam_roadmap", `mock-exam` = "mock_exam")
+  ),
+  `formula-library` = list(
+    main = "reference", nav_id = "reference_navigation", default_section = "laplace",
+    sections = c(
+      laplace = "reference_laplace", `differential-equations` = "reference_differential",
+      `linear-algebra` = "reference_linear_algebra", `method-selector` = "reference_method_selector"
+    )
+  ),
+  `source-prompts` = list(main = "source_prompts")
+)
+
+route_scalar <- function(query, name) {
+  value <- query[[name]]
+  if (is.null(value) || !length(value)) return("")
+  trimws(as.character(value[[1]]))
+}
+
+resolve_app_route <- function(query = list()) {
+  page <- route_scalar(query, "page")
+  if (!nzchar(page) || is.null(app_route_map[[page]])) page <- "home"
+  definition <- app_route_map[[page]]
+
+  section <- ""
+  section_value <- NULL
+  if (!is.null(definition$sections)) {
+    requested <- route_scalar(query, "section")
+    section <- if (requested %in% names(definition$sections)) {
+      requested
+    } else {
+      definition$default_section
+    }
+    section_value <- unname(definition$sections[[section]])
+  }
+
+  example <- ""
+  example_value <- NULL
+  if (identical(page, "laplace") && identical(section, "engineering")) {
+    requested <- route_scalar(query, "example")
+    example <- if (requested %in% names(definition$examples)) {
+      requested
+    } else {
+      definition$default_example
+    }
+    example_value <- unname(definition$examples[[example]])
+  }
+
+  query_string <- paste0("?page=", page)
+  if (nzchar(section)) query_string <- paste0(query_string, "&section=", section)
+  if (nzchar(example)) query_string <- paste0(query_string, "&example=", example)
+
+  list(
+    page = page, main_value = definition$main,
+    nav_id = definition$nav_id, section = section, section_value = section_value,
+    example_nav_id = definition$example_nav_id, example = example,
+    example_value = example_value, query = query_string
+  )
+}
+
+slug_for_value <- function(mapping, value, fallback) {
+  if (is.null(value) || !length(value)) return(fallback)
+  match_index <- match(value, unname(mapping))
+  if (is.na(match_index)) fallback else names(mapping)[[match_index]]
+}
+
+app_route_from_tab_values <- function(main_value, tab_values = list()) {
+  main_values <- vapply(app_route_map, function(definition) definition$main, character(1))
+  main_match <- match(main_value, main_values)
+  page <- if (!length(main_match) || is.na(main_match)) "home" else names(app_route_map)[[main_match]]
+  definition <- app_route_map[[page]]
+  query <- list(page = page)
+
+  if (!is.null(definition$sections)) {
+    selected <- tab_values[[definition$nav_id]]
+    query$section <- slug_for_value(definition$sections, selected, definition$default_section)
+  }
+  if (identical(page, "laplace") && identical(query$section, "engineering")) {
+    selected <- tab_values[[definition$example_nav_id]]
+    query$example <- slug_for_value(definition$examples, selected, definition$default_example)
+  }
+  resolve_app_route(query)
+}
+
 help_tip <- function(text) {
   tags$span(
     class = "help-tip", tabindex = "0", `data-tip` = text,
@@ -1725,6 +1845,13 @@ source_prompt_story <- list(
       "Debug the game, make it intuitive and useful for learning, explain how it trains pattern recognition, open-source every rule and scoring decision on the page, and add ASCII art that connects eigenvalues to rocket motion."
     ),
     outcome = "Rebuilt the game flow around predict–move–verify practice, added a live one-tick pattern coach, clearer readiness and name feedback, a mission reset, transition-safe baselines, three ASCII concept diagrams, and an on-page rulebook covering the model, thresholds, algorithm, scoring, storage, and complete R source."
+  ),
+  list(
+    phase = "25 · Shareable deep links", title = "Give every learning page its own URL",
+    prompts = c(
+      "Explore ways to assign a unique link to Exam Practice and every main page, then proceed with the most optimal approach."
+    ),
+    outcome = "Added friendly query-string routes for all seven main pages and their important subpages, stable tab identifiers, automatic address-bar updates, canonical fallback routes, and browser Back/Forward restoration without replacing the existing Shiny navigation."
   )
 )
 
@@ -1750,8 +1877,8 @@ source_prompts_page <- function() {
       ),
       div(
         class = "prompt-stats",
-        div(strong("24"), span("build milestones")),
-        div(strong("46"), span("source requests reviewed")),
+        div(strong("25"), span("build milestones")),
+        div(strong("48"), span("source requests reviewed")),
         div(strong("2020–2025"), span("finals represented"))
       )
     ),
@@ -3956,7 +4083,7 @@ ui <- fluidPage(
               module_header("II", "Differential equations",
                 "Classify equations, connect characteristic roots to motion, and interpret coupled systems."),
               tabsetPanel(id = "differential_navigation", type = "pills",
-                tabPanel("1 · Overview",
+                tabPanel("1 · Overview", value = "differential_about",
                   div(class = "card",
                     div(class = "eyebrow", "Exam domain"),
                     h2("Differential equations"),
@@ -3999,7 +4126,7 @@ ui <- fluidPage(
                     )
                   )
                 ),
-                tabPanel("2 · Explore: Linear ODEs",
+                tabPanel("2 · Explore: Linear ODEs", value = "differential_linear_odes",
                   div(class = "card",
                     div(class = "eyebrow", "Interactive method"),
                     h2("Characteristic-root explorer"),
@@ -4033,7 +4160,7 @@ ui <- fluidPage(
                     )
                   )
                 ),
-                tabPanel("3 · Explore: Systems",
+                tabPanel("3 · Explore: Systems", value = "differential_systems",
                   div(class = "card",
                     div(class = "eyebrow", "Coupled equations"),
                     h2("Two-state system explorer"),
@@ -4068,7 +4195,7 @@ ui <- fluidPage(
                     )
                   )
                 ),
-                { rocket_stability_tab <- function() tabPanel("4 · Frontier: Rocket Stability",
+                { rocket_stability_tab <- function() tabPanel("4 · Frontier: Rocket Stability", value = "rocket_stability",
                   div(class = "rocket-frontier-page",
                     div(class = "card rocket-hero",
                       div(class = "rocket-hero-copy",
@@ -4183,7 +4310,7 @@ ui <- fluidPage(
                     )
                   )
                 ); NULL },
-                tabPanel("4 · Watch: Videos",
+                tabPanel("4 · Watch: Videos", value = "differential_videos",
                   video_lesson_page(
                     "Differential equations",
                     paste(
@@ -4195,7 +4322,7 @@ ui <- fluidPage(
                     "https://www.video-tutor.net/differential-equations.html"
                   )
                 ),
-                tabPanel("5 · Apply: Engineering",
+                tabPanel("5 · Apply: Engineering", value = "differential_engineering",
                   div(class = "card",
                     div(class = "eyebrow", "Thermal engineering"),
                     h2("Keeping equipment at a safe temperature"),
@@ -4299,7 +4426,7 @@ ui <- fluidPage(
                 "Move from systems and determinants to eigenvectors, diagonalization, and structural applications.",
                 "Overview  →  Explore  →  Frontier  →  Play  →  Watch  →  Apply"),
               tabsetPanel(id = "linear_algebra_navigation", type = "pills",
-                tabPanel("1 · Overview",
+                tabPanel("1 · Overview", value = "linear_algebra_about",
                   div(class = "card",
                     div(class = "eyebrow", "Highest-weight exam domain"),
                     h2("Linear algebra"),
@@ -4337,7 +4464,7 @@ ui <- fluidPage(
                     )
                   )
                 ),
-                tabPanel("2 · Explore: Systems",
+                tabPanel("2 · Explore: Systems", value = "linear_algebra_systems",
                   div(class = "card",
                     div(class = "eyebrow", "Interactive calculation"),
                     h2("Solve Ax=b and test invertibility"),
@@ -4373,7 +4500,7 @@ ui <- fluidPage(
                     )
                   )
                 ),
-                tabPanel("3 · Explore: Eigenvalues",
+                tabPanel("3 · Explore: Eigenvalues", value = "linear_algebra_eigenvalues",
                   div(class = "eigen-dashboard",
                   div(class = "card eigen-hero",
                     div(class = "eyebrow", "Geometric intuition · exam shortcut · 6/6 finals"),
@@ -4577,10 +4704,10 @@ ui <- fluidPage(
                   )
                 ),
                 rocket_stability_tab(),
-                tabPanel("5 · Play: Rocket Balancer",
+                tabPanel("5 · Play: Rocket Balancer", value = "rocket_balancer",
                   rocket_game_page()
                 ),
-                tabPanel("6 · Watch: Videos",
+                tabPanel("6 · Watch: Videos", value = "linear_algebra_videos",
                   video_lesson_page(
                     "Linear algebra",
                     paste(
@@ -4592,7 +4719,7 @@ ui <- fluidPage(
                     "https://www.video-tutor.net/matrices.html"
                   )
                 ),
-                tabPanel("7 · Apply: Engineering",
+                tabPanel("7 · Apply: Engineering", value = "linear_algebra_engineering",
                   div(class = "card",
                     div(class = "eyebrow", "Structural engineering"),
                     h2("Solving forces at a truss joint"),
@@ -4976,7 +5103,7 @@ ui <- fluidPage(
                 tags$p("Use these formulas to identify a method, then verify the conditions before applying it.")
               ),
               tabsetPanel(id = "reference_navigation", type = "pills",
-                tabPanel("Laplace",
+                tabPanel("Laplace", value = "reference_laplace",
                   div(class = "card",
                     h3("Definition and core properties"),
                     math_block(
@@ -5013,7 +5140,7 @@ ui <- fluidPage(
                     )
                   )
                 ),
-                tabPanel("Differential Equations",
+                tabPanel("Differential Equations", value = "reference_differential",
                   div(class = "card",
                     h3("Constant-coefficient linear equations"),
                     math_block("ay''+by'+cy=g(x)\\quad\\Longrightarrow\\quad ar^2+br+c=0",
@@ -5053,7 +5180,7 @@ ui <- fluidPage(
                       "Negative real parts imply decay; positive real parts imply growth; opposite signs produce a saddle; imaginary parts produce rotation or oscillation.")
                   )
                 ),
-                tabPanel("Linear Algebra",
+                tabPanel("Linear Algebra", value = "reference_linear_algebra",
                   div(class = "card",
                     h3("Two-by-two essentials"),
                     math_block("A=\\begin{bmatrix}a&b\\\\c&d\\end{bmatrix},\\qquad \\det(A)=ad-bc",
@@ -5101,7 +5228,7 @@ ui <- fluidPage(
                     )
                   )
                 ),
-                tabPanel("Method Selector",
+                tabPanel("Method Selector", value = "reference_method_selector",
                   div(class = "card",
                     h3("What should I try first?"),
                     tags$table(
@@ -5133,6 +5260,89 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
+  route_state <- reactiveValues(
+    restoring = TRUE,
+    target = NULL,
+    last_written = NULL
+  )
+
+  current_tab_route <- function() {
+    app_route_from_tab_values(
+      input$main_navigation,
+      list(
+        laplace_navigation = input$laplace_navigation,
+        engineering_navigation = input$engineering_navigation,
+        differential_navigation = input$differential_navigation,
+        linear_algebra_navigation = input$linear_algebra_navigation,
+        exam_navigation = input$exam_navigation,
+        reference_navigation = input$reference_navigation
+      )
+    )
+  }
+
+  apply_app_route <- function(route) {
+    target_query <- route$query
+    route_state$restoring <- TRUE
+    route_state$target <- target_query
+    updateTabsetPanel(session, "main_navigation", selected = route$main_value)
+    if (!is.null(route$nav_id) && !is.null(route$section_value)) {
+      updateTabsetPanel(session, route$nav_id, selected = route$section_value)
+    }
+    if (!is.null(route$example_nav_id) && !is.null(route$example_value)) {
+      updateTabsetPanel(session, route$example_nav_id, selected = route$example_value)
+    }
+
+    session$onFlushed(function() {
+      if (!identical(isolate(session$clientData$url_search), target_query)) {
+        route_state$last_written <- target_query
+        updateQueryString(target_query, mode = "replace", session = session)
+      }
+      selected <- isolate(current_tab_route())
+      if (identical(selected$query, target_query)) {
+        route_state$restoring <- FALSE
+        route_state$target <- NULL
+      }
+    }, once = TRUE)
+  }
+
+  observe({
+    query <- shiny::getQueryString(session)
+    current_search <- session$clientData$url_search
+    if (!is.null(route_state$last_written) &&
+        identical(current_search, route_state$last_written)) {
+      route_state$last_written <- NULL
+      return()
+    }
+    apply_app_route(resolve_app_route(query))
+  })
+
+  observeEvent(
+    list(
+      input$main_navigation,
+      input$laplace_navigation,
+      input$engineering_navigation,
+      input$differential_navigation,
+      input$linear_algebra_navigation,
+      input$exam_navigation,
+      input$reference_navigation
+    ),
+    {
+      route <- current_tab_route()
+      if (isTRUE(route_state$restoring)) {
+        if (identical(route$query, route_state$target)) {
+          route_state$restoring <- FALSE
+          route_state$target <- NULL
+        }
+        return()
+      }
+      if (!identical(session$clientData$url_search, route$query)) {
+        route_state$last_written <- route$query
+        updateQueryString(route$query, mode = "push", session = session)
+      }
+    },
+    ignoreInit = FALSE
+  )
+
   plot_bg <- "#08090b"
   plot_axis <- "#a6a6aa"
   plot_text <- "#eeeeea"

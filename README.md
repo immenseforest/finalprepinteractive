@@ -18,6 +18,8 @@ The app includes:
   mastery scoring, and a persistent top-10 leaderboard
 - Widescreen learning cockpits that align related plots side by side while
   automatically stacking them on tablets and phones
+- Friendly shareable URLs for every main page and important subpage, with
+  browser Back/Forward restoration
 - Exam coverage map with matrix-size frequencies, difficulty proxies,
   efficiency stop rules, a study-time allocator, and a practice generator
 - Five 50-mark mock finals with verified answers, displayed algebra, and tutorial matches
@@ -32,6 +34,19 @@ shiny::runApp()
 
 The app uses base R plotting for most labs and Plotly for the interactive
 eigenvalue and rocket-stability cockpits.
+
+## Shareable page links
+
+Append a friendly query route to the deployed app URL. Examples:
+
+- `?page=exam-practice&section=mock-exam`
+- `?page=linear-algebra&section=eigenvalues`
+- `?page=linear-algebra&section=rocket-balancer`
+- `?page=laplace&section=engineering&example=chemical-mixing`
+- `?page=formula-library&section=method-selector`
+
+The address bar updates as the user changes pages, and browser Back/Forward
+restores the matching main page, subpage, and engineering example.
 
 ## Community and game storage
 
